@@ -21,7 +21,7 @@ type TabType = "instock" | "preorder";
 
 export default function StorefrontClient({ items }: { items: StorefrontProduct[] }) {
   const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("instock");
   const [cart, setCart] = useState<CartItem[]>([]);
 
@@ -54,40 +54,47 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
   const preOrder = useMemo(() => items.filter((p) => p.isPreOrder), [items]);
   const sourceList = activeTab === "instock" ? inStock : preOrder;
 
-  const categories = useMemo(
-    () => [
-      "ทั้งหมด",
-      ...Array.from(new Set(sourceList.map((p) => p.categoryName ?? "ไม่ระบุหมวด"))),
-    ],
-    [sourceList]
-  );
+  const categories = useMemo(() => {
+    const map = new Map<string, { count: number; imageUrl: string | null }>();
+    for (const p of sourceList) {
+      const cat = p.categoryName ?? "ไม่ระบุหมวด";
+      const entry = map.get(cat) ?? { count: 0, imageUrl: null };
+      entry.count++;
+      if (!entry.imageUrl) {
+        const img = p.image1Url || p.image2Url;
+        if (img) entry.imageUrl = img;
+      }
+      map.set(cat, entry);
+    }
+    return Array.from(map.entries()).map(([name, v]) => ({ name, ...v }));
+  }, [sourceList]);
+
+  const isSearching = search.trim().length > 0;
 
   const filtered = sourceList.filter((p) => {
     const matchSearch =
+      !isSearching ||
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.code.toLowerCase().includes(search.toLowerCase());
     const matchCat =
-      selectedCategory === "ทั้งหมด" ||
-      (p.categoryName ?? "ไม่ระบุหมวด") === selectedCategory;
+      isSearching || selectedCategory === null || (p.categoryName ?? "ไม่ระบุหมวด") === selectedCategory;
     return matchSearch && matchCat;
   });
+
+  const showCategoryGrid = !isSearching && selectedCategory === null;
 
   function handleTabChange(tab: TabType) {
     setActiveTab(tab);
     setSearch("");
-    setSelectedCategory("ทั้งหมด");
+    setSelectedCategory(null);
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ===== HEADER ===== */}
-      <header className="bg-emerald-700 text-white shadow-lg sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-4 py-4">
-          <h1 className="text-xl font-extrabold tracking-wide">สบายพาณิชย์</h1>
-          <p className="text-emerald-200 text-xs mt-0.5">
-            เลือกสินค้า สั่งซื้อ และชำระเงินผ่าน PromptPay
-          </p>
-        </div>
+      {/* ===== BANNER ===== */}
+      <header className="relative sticky top-0 z-50 shadow-lg">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/banner.png" alt="สบายพาณิชย์" className="w-full h-28 sm:h-36 object-cover" />
       </header>
 
       {/* ===== TAB BAR ===== */}
@@ -143,10 +150,10 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
         </div>
       )}
 
-      {/* ===== SEARCH + CATEGORY ===== */}
+      {/* ===== SEARCH ===== */}
       <div className="bg-white border-b">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
+        <div className="max-w-5xl mx-auto px-4 py-3">
+          <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
             <input
               type="text"
@@ -156,64 +163,101 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
               className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
             />
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-semibold border transition-all ${
-                  selectedCategory === cat
-                    ? activeTab === "preorder"
-                      ? "bg-amber-500 text-white border-amber-500"
-                      : "bg-emerald-700 text-white border-emerald-700"
-                    : "bg-white text-gray-600 border-gray-300 hover:border-emerald-400"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
-      {/* ===== PRODUCT GRID ===== */}
       <main className="max-w-5xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-5">
-          <p className="text-gray-500 text-sm">
-            แสดง{" "}
-            <span
-              className={`font-bold ${
-                activeTab === "preorder" ? "text-amber-600" : "text-emerald-700"
-              }`}
-            >
-              {filtered.length}
-            </span>{" "}
-            รายการ
-          </p>
-        </div>
-
         {sourceList.length === 0 ? (
           <div className="text-center py-24 text-gray-400">
             <div className="text-5xl mb-3">🛒</div>
             <p className="font-semibold">ยังไม่มีสินค้าในระบบ</p>
             <p className="text-sm mt-1">กรุณากลับมาดูใหม่อีกครั้งเร็ว ๆ นี้</p>
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
-            <div className="text-5xl mb-3">{activeTab === "preorder" ? "📋" : "📦"}</div>
-            <p className="font-semibold">ไม่พบสินค้าที่ตรงกัน</p>
-          </div>
+        ) : showCategoryGrid ? (
+          <>
+            <h2 className="text-gray-700 font-bold text-lg mb-4">เลือกหมวดหมู่สินค้า</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {categories.map((cat) => (
+                <button
+                  key={cat.name}
+                  onClick={() => setSelectedCategory(cat.name)}
+                  className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 text-left"
+                >
+                  <div className="aspect-[4/3] bg-gray-50 relative overflow-hidden">
+                    {cat.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={cat.imageUrl}
+                        alt={cat.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-4xl text-gray-200">
+                        🗂️
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <p className="text-white font-bold text-sm leading-snug drop-shadow">{cat.name}</p>
+                      <p className="text-white/80 text-xs">{cat.count} รายการ</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {filtered.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                isPreOrder={activeTab === "preorder"}
-                onAddToCart={addToCart}
-              />
-            ))}
-          </div>
+          <>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                {!isSearching && (
+                  <button
+                    onClick={() => setSelectedCategory(null)}
+                    className="text-sm font-semibold text-emerald-700 hover:underline flex items-center gap-1"
+                  >
+                    ← กลับไปหมวดหมู่
+                  </button>
+                )}
+                {isSearching && (
+                  <button
+                    onClick={() => setSearch("")}
+                    className="text-sm font-semibold text-emerald-700 hover:underline flex items-center gap-1"
+                  >
+                    ✕ ล้างการค้นหา
+                  </button>
+                )}
+              </div>
+              <p className="text-gray-500 text-sm">
+                แสดง{" "}
+                <span
+                  className={`font-bold ${
+                    activeTab === "preorder" ? "text-amber-600" : "text-emerald-700"
+                  }`}
+                >
+                  {filtered.length}
+                </span>{" "}
+                รายการ{!isSearching && selectedCategory ? ` ใน "${selectedCategory}"` : ""}
+              </p>
+            </div>
+
+            {filtered.length === 0 ? (
+              <div className="text-center py-20 text-gray-400">
+                <div className="text-5xl mb-3">{activeTab === "preorder" ? "📋" : "📦"}</div>
+                <p className="font-semibold">ไม่พบสินค้าที่ตรงกัน</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {filtered.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    isPreOrder={activeTab === "preorder"}
+                    onAddToCart={addToCart}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </main>
 
