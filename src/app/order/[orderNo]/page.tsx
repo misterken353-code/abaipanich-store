@@ -21,6 +21,11 @@ const SHIPPING_NOTE: Record<string, string> = {
   FREIGHT: "ชำระค่าส่งปลายทางกับบริษัทขนส่ง",
 };
 
+const PAYMENT_LABEL: Record<string, string> = {
+  COD: "จ่ายตอนรับของ",
+  TRANSFER: "โอนเงินผ่าน PromptPay",
+};
+
 export default async function OrderConfirmationPage({
   params,
 }: {
@@ -77,13 +82,24 @@ export default async function OrderConfirmationPage({
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 p-5 text-center">
-          {order.promptPayQr ? (
+          {order.paymentMethod === "COD" ? (
+            <>
+              <div className="text-3xl mb-2">💵</div>
+              <p className="font-bold text-gray-700">ชำระเงินปลายทางเมื่อได้รับสินค้า</p>
+              <p className="text-sm text-gray-500 mt-1">
+                เตรียมเงินสด ฿{Number(order.totalAmount).toLocaleString("th-TH")} ไว้ชำระตอนรับสินค้าได้เลย
+              </p>
+            </>
+          ) : order.promptPayQr ? (
             <>
               <p className="font-bold text-gray-700 mb-3">สแกน QR เพื่อชำระเงินผ่าน PromptPay</p>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={order.promptPayQr} alt="PromptPay QR" className="mx-auto w-64 h-64" />
               <p className="text-xs text-gray-400 mt-2">
                 ยอดชำระ ฿{Number(order.totalAmount).toLocaleString("th-TH")}
+              </p>
+              <p className="text-sm font-semibold text-amber-700 bg-amber-50 rounded-xl px-4 py-2 mt-4">
+                📎 โอนเสร็จแล้ว กรุณาส่งสลิปยืนยันการชำระเงินให้ทางร้านทาง LINE
               </p>
             </>
           ) : (
@@ -99,6 +115,7 @@ export default async function OrderConfirmationPage({
 
         <div className="bg-white rounded-2xl border border-gray-100 p-5 text-sm text-gray-600 space-y-1">
           <p className="font-semibold text-gray-800 mb-2">การจัดส่ง</p>
+          <p>วิธีชำระเงิน: {PAYMENT_LABEL[order.paymentMethod] ?? order.paymentMethod}</p>
           <p>วิธีจัดส่ง: {SHIPPING_LABEL[order.shippingMethod] ?? order.shippingMethod}</p>
           <p className="text-xs text-gray-400">{SHIPPING_NOTE[order.shippingMethod]}</p>
           {order.customerLat != null && order.customerLng != null && (

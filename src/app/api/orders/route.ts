@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ShippingMethod } from "@prisma/client";
+import { ShippingMethod, PaymentMethod } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { notifyShop } from "@/lib/line";
 import generatePayload from "promptpay-qr";
@@ -9,6 +9,11 @@ const SHIPPING_LABEL: Record<string, string> = {
   PICKUP: "รับเองหน้าร้าน",
   MOTORCYCLE: "เรียกม้าเร็วจัดส่ง",
   FREIGHT: "จัดส่งทางขนส่ง",
+};
+
+const PAYMENT_LABEL: Record<string, string> = {
+  COD: "จ่ายตอนรับของ",
+  TRANSFER: "โอนเงินผ่าน PromptPay",
 };
 
 interface OrderItemInput {
@@ -24,15 +29,17 @@ interface CustomerInput {
 }
 
 const VALID_SHIPPING_METHODS: string[] = Object.values(ShippingMethod);
+const VALID_PAYMENT_METHODS: string[] = Object.values(PaymentMethod);
 
 // POST /api/orders — public, สร้างออเดอร์จากตะกร้าลูกค้า
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
-  const { customer, items, note, shippingMethod, customerLat, customerLng } = body as {
+  const { customer, items, note, shippingMethod, paymentMethod, customerLat, customerLng } = body as {
     customer?: CustomerInput;
     items?: OrderItemInput[];
     note?: string | null;
     shippingMethod?: string;
+    paymentMethod?: string;
     customerLat?: number | null;
     customerLng?: number | null;
   };
@@ -45,6 +52,9 @@ export async function POST(req: NextRequest) {
   }
   if (!shippingMethod || !VALID_SHIPPING_METHODS.includes(shippingMethod)) {
     return NextResponse.json({ error: "กรุณาเลือกวิธีจัดส่ง" }, { status: 400 });
+  }
+  if (!paymentMethod || !VALID_PAYMENT_METHODS.includes(paymentMethod)) {
+    return NextResponse.json({ error: "กรุณาเลือกวิธีชำระเงิน" }, { status: 400 });
   }
 
   const products = await prisma.syncedProduct.findMany({
@@ -100,6 +110,7 @@ export async function POST(req: NextRequest) {
           shippingAddress: customer.address,
           customerLat: customerLat ?? null,
           customerLng: customerLng ?? null,
+          paymentMethod: paymentMethod as PaymentMethod,
           note: note ?? null,
           items: {
             create: items.map((item) => {
@@ -117,7 +128,7 @@ export async function POST(req: NextRequest) {
     });
 
     const promptPayId = process.env.PROMPTPAY_ID || (await prisma.appSettings.findUnique({ where: { id: "singleton" } }))?.promptPayId;
-    if (promptPayId) {
+    if (paymentMethod === "TRANSFER" && promptPayId) {
       try {
         const payload = generatePayload(promptPayId, { amount: totalAmount });
         const qrDataUrl = await QRCode.toDataURL(payload, { width: 300, margin: 1 });
@@ -139,12 +150,17 @@ export async function POST(req: NextRequest) {
           ? `\n📍 https://www.google.com/maps?q=${customerLat},${customerLng}`
           : "";
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+      const paymentLine =
+        paymentMethod === "COD"
+          ? `ชำระเงิน: ${PAYMENT_LABEL.COD} (เงินสด)`
+          : `ชำระเงิน: ${PAYMENT_LABEL.TRANSFER} (รอลูกค้าส่งสลิป)`;
       await notifyShop(
         `🛒 ออเดอร์ใหม่ ${order.orderNo}\n` +
           `ลูกค้า: ${customer.name.trim()} (${customer.phone.trim()})\n` +
           `${itemLines}\n` +
           `ยอดรวม: ${totalAmount.toLocaleString("th-TH")} บาท\n` +
-          `จัดส่ง: ${SHIPPING_LABEL[shippingMethod] ?? shippingMethod}${mapsLine}` +
+          `จัดส่ง: ${SHIPPING_LABEL[shippingMethod] ?? shippingMethod}${mapsLine}\n` +
+          `${paymentLine}` +
           (appUrl ? `\n\nดูรายละเอียด: ${appUrl}/admin/orders/${order.id}` : "")
       );
     } catch (e) {

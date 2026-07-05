@@ -21,6 +21,11 @@ const SHIPPING_LABEL: Record<string, string> = {
   FREIGHT: "ขนส่ง",
 };
 
+const PAYMENT_LABEL: Record<string, string> = {
+  COD: "จ่ายปลายทาง",
+  TRANSFER: "โอนเงิน",
+};
+
 export default async function AdminOrdersPage() {
   const orders = await prisma.order.findMany({
     include: { customer: true, items: true },
@@ -40,6 +45,7 @@ export default async function AdminOrdersPage() {
               <th className="px-4 py-2">ลูกค้า</th>
               <th className="px-4 py-2">รายการ</th>
               <th className="px-4 py-2">จัดส่ง</th>
+              <th className="px-4 py-2">ชำระเงิน</th>
               <th className="px-4 py-2">ยอดรวม</th>
               <th className="px-4 py-2">สถานะ</th>
               <th className="px-4 py-2">วันที่</th>
@@ -59,6 +65,7 @@ export default async function AdminOrdersPage() {
                 </td>
                 <td className="px-4 py-2 text-gray-500">{o.items.length} รายการ</td>
                 <td className="px-4 py-2 text-gray-500">{SHIPPING_LABEL[o.shippingMethod] ?? o.shippingMethod}</td>
+                <td className="px-4 py-2 text-gray-500">{PAYMENT_LABEL[o.paymentMethod] ?? o.paymentMethod}</td>
                 <td className="px-4 py-2 font-semibold">
                   {Number(o.totalAmount).toLocaleString("th-TH")}
                 </td>
@@ -74,7 +81,7 @@ export default async function AdminOrdersPage() {
             ))}
             {orders.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
                   ยังไม่มีออเดอร์
                 </td>
               </tr>

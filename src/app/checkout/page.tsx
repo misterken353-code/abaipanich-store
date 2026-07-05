@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { cartTotal, getCart, saveCart, type CartItem } from "@/lib/cart";
 
 type ShippingMethod = "PICKUP" | "MOTORCYCLE" | "FREIGHT";
+type PaymentMethod = "COD" | "TRANSFER";
 
 const SHIPPING_OPTIONS: { value: ShippingMethod; label: string; desc: string }[] = [
   { value: "PICKUP", label: "รับเองหน้าร้าน", desc: "ไม่มีค่าจัดส่ง" },
@@ -15,6 +16,11 @@ const SHIPPING_OPTIONS: { value: ShippingMethod; label: string; desc: string }[]
     desc: "เริ่มต้น 15 บาท (กม. แรก) กม. ที่ 2 ขึ้นไป กม. ละ 5 บาท",
   },
   { value: "FREIGHT", label: "จัดส่งทางขนส่ง", desc: "ชำระค่าส่งปลายทางกับบริษัทขนส่ง" },
+];
+
+const PAYMENT_OPTIONS: { value: PaymentMethod; label: string; desc: string }[] = [
+  { value: "TRANSFER", label: "โอนเงินผ่าน PromptPay", desc: "สแกน QR ชำระเงินทันทีหลังสั่งซื้อ" },
+  { value: "COD", label: "จ่ายตอนรับของ", desc: "ชำระเงินสดเมื่อได้รับสินค้า" },
 ];
 
 export default function CheckoutPage() {
@@ -27,6 +33,7 @@ export default function CheckoutPage() {
   const [lineUserId, setLineUserId] = useState("");
   const [note, setNote] = useState("");
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod>("PICKUP");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("TRANSFER");
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -93,6 +100,7 @@ export default function CheckoutPage() {
           customer: { name: name.trim(), phone: phone.trim(), address: address.trim() || null, lineUserId: lineUserId.trim() || null },
           note: note.trim() || null,
           shippingMethod,
+          paymentMethod,
           customerLat: location?.lat ?? null,
           customerLng: location?.lng ?? null,
           items: cart.map((i) => ({ productId: i.productId, qty: i.qty })),
@@ -224,6 +232,34 @@ export default function CheckoutPage() {
               />
             </div>
           )}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">วิธีชำระเงิน *</label>
+            <div className="space-y-2">
+              {PAYMENT_OPTIONS.map((opt) => (
+                <label
+                  key={opt.value}
+                  className={`flex items-start gap-3 border rounded-xl px-4 py-3 cursor-pointer transition-colors ${
+                    paymentMethod === opt.value
+                      ? "border-emerald-500 bg-emerald-50"
+                      : "border-gray-200 hover:border-emerald-300"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    checked={paymentMethod === opt.value}
+                    onChange={() => setPaymentMethod(opt.value)}
+                    className="mt-1 accent-emerald-700"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">{opt.label}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{opt.desc}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">LINE ID (ถ้ามี)</label>
             <input

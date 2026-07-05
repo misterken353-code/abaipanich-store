@@ -8,6 +8,11 @@ const SHIPPING_LABEL: Record<string, string> = {
   FREIGHT: "จัดส่งทางขนส่ง",
 };
 
+const PAYMENT_LABEL: Record<string, string> = {
+  COD: "จ่ายตอนรับของ",
+  TRANSFER: "โอนเงินผ่าน PromptPay",
+};
+
 export default async function AdminOrderDetailPage({
   params,
 }: {
@@ -60,7 +65,8 @@ export default async function AdminOrderDetailPage({
       </div>
 
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5 text-sm text-gray-600">
-        <h2 className="mb-2 font-semibold text-gray-700">การจัดส่ง</h2>
+        <h2 className="mb-2 font-semibold text-gray-700">การจัดส่งและชำระเงิน</h2>
+        <p>วิธีชำระเงิน: {PAYMENT_LABEL[order.paymentMethod] ?? order.paymentMethod}</p>
         <p>วิธีจัดส่ง: {SHIPPING_LABEL[order.shippingMethod] ?? order.shippingMethod}</p>
         {order.shippingAddress && <p>ที่อยู่: {order.shippingAddress}</p>}
         {order.customerLat != null && order.customerLng != null && (

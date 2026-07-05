@@ -112,6 +112,11 @@ enum ShippingMethod {
   FREIGHT     // จัดส่งทางขนส่ง — ค่าส่งจ่ายปลายทาง ไม่รวมใน totalAmount/QR
 }
 
+enum PaymentMethod {
+  COD      // จ่ายตอนรับของ — ไม่ generate QR, แจ้งร้านว่าเป็นเงินสดปลายทาง
+  TRANSFER // โอนเงินผ่าน PromptPay — generate QR, เตือนลูกค้าส่งสลิปหลังโอน
+}
+
 model Order {
   id              String         @id @default(cuid())
   orderNo         String         @unique
@@ -125,6 +130,7 @@ model Order {
   shippingAddress String?
   customerLat     Float?
   customerLng     Float?
+  paymentMethod   PaymentMethod  @default(TRANSFER)
   note            String?
   promptPayQr     String?        @db.Text
   slipUrl         String?
