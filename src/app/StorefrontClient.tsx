@@ -99,7 +99,7 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
 
       {/* ===== TAB BAR ===== */}
       <div className="bg-white border-b shadow-sm">
-        <div className="max-w-5xl mx-auto px-4">
+        <div className="max-w-[1600px] mx-auto px-4">
           <div className="flex">
             <button
               onClick={() => handleTabChange("instock")}
@@ -136,7 +136,7 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
       {/* ===== PRE-ORDER NOTICE ===== */}
       {activeTab === "preorder" && (
         <div className="bg-amber-50 border-b border-amber-200">
-          <div className="max-w-5xl mx-auto px-4 py-3 flex items-start gap-3">
+          <div className="max-w-[1600px] mx-auto px-4 py-3 flex items-start gap-3">
             <span className="text-2xl mt-0.5">📦</span>
             <div>
               <p className="text-amber-800 font-bold text-sm">
@@ -152,7 +152,7 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
 
       {/* ===== SEARCH ===== */}
       <div className="bg-white border-b">
-        <div className="max-w-5xl mx-auto px-4 py-3">
+        <div className="max-w-[1600px] mx-auto px-4 py-3">
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
             <input
@@ -166,7 +166,7 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
         </div>
       </div>
 
-      <main className="max-w-5xl mx-auto px-4 py-6">
+      <main className="max-w-[1600px] mx-auto px-4 py-6">
         {sourceList.length === 0 ? (
           <div className="text-center py-24 text-gray-400">
             <div className="text-5xl mb-3">🛒</div>
@@ -176,12 +176,12 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
         ) : showCategoryGrid ? (
           <>
             <h2 className="text-gray-700 font-bold text-lg mb-4">เลือกหมวดหมู่สินค้า</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {categories.map((cat) => (
                 <button
                   key={cat.name}
                   onClick={() => setSelectedCategory(cat.name)}
-                  className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 text-left"
+                  className="group bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-amber-300/60 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-left"
                 >
                   <div className="aspect-[4/3] bg-gray-50 relative overflow-hidden">
                     {cat.imageUrl ? (
@@ -189,17 +189,17 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
                       <img
                         src={cat.imageUrl}
                         alt={cat.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-4xl text-gray-200">
                         🗂️
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <p className="text-white font-bold text-sm leading-snug drop-shadow">{cat.name}</p>
-                      <p className="text-white/80 text-xs">{cat.count} รายการ</p>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                      <p className="text-white font-bold text-base leading-snug drop-shadow">{cat.name}</p>
+                      <p className="text-amber-200/90 text-xs font-semibold mt-0.5">{cat.count} รายการ</p>
                     </div>
                   </div>
                 </button>
@@ -246,7 +246,7 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
                 <p className="font-semibold">ไม่พบสินค้าที่ตรงกัน</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
                 {filtered.map((product) => (
                   <ProductCard
                     key={product.id}
@@ -318,8 +318,8 @@ function ProductCard({
 
   return (
     <div
-      className={`bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col ${
-        isPreOrder ? "border-amber-200" : "border-gray-100"
+      className={`group bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col ${
+        isPreOrder ? "border-amber-200 hover:border-amber-300" : "border-gray-100 hover:border-amber-300/60"
       }`}
     >
       <div className="aspect-square bg-gray-50 relative overflow-hidden">
@@ -328,7 +328,7 @@ function ProductCard({
           <img
             src={imgSrc}
             alt={product.name}
-            className={`w-full h-full object-cover ${isPreOrder ? "opacity-80" : ""}`}
+            className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${isPreOrder ? "opacity-80" : ""}`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-4xl text-gray-200">
@@ -353,15 +353,15 @@ function ProductCard({
         )}
       </div>
 
-      <div className="p-3 flex flex-col flex-1">
-        <p className="text-[11px] text-gray-400 font-mono mb-0.5">{product.code}</p>
-        <p className="text-sm font-semibold text-gray-800 leading-snug flex-1 line-clamp-2">
+      <div className="p-4 flex flex-col flex-1">
+        <p className="text-[11px] text-gray-400 font-mono mb-1">{product.code}</p>
+        <p className="text-sm font-semibold text-gray-800 leading-snug flex-1 line-clamp-2 min-h-[2.5rem]">
           {product.name}
         </p>
 
-        <div className="mt-2 flex items-end justify-between gap-1">
+        <div className="mt-3 flex items-end justify-between gap-1">
           <div>
-            <p className={`text-lg font-extrabold ${isPreOrder ? "text-amber-600" : "text-emerald-700"}`}>
+            <p className={`text-xl font-extrabold tracking-tight ${isPreOrder ? "text-amber-600" : "text-emerald-700"}`}>
               ฿{product.salePrice.toLocaleString("th-TH", { minimumFractionDigits: 0 })}
             </p>
             {product.unitName && <p className="text-[11px] text-gray-400">/ {product.unitName}</p>}
@@ -371,7 +371,7 @@ function ProductCard({
 
         <button
           onClick={() => onAddToCart(product)}
-          className={`mt-3 w-full rounded-full py-1.5 text-xs font-bold text-white transition-colors ${
+          className={`mt-3 w-full rounded-full py-2 text-xs font-bold text-white shadow-sm transition-all hover:shadow-md ${
             isPreOrder ? "bg-amber-500 hover:bg-amber-600" : "bg-emerald-700 hover:bg-emerald-800"
           }`}
         >
