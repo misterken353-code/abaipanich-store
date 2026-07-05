@@ -84,7 +84,7 @@ GEARGAO_ORG_SLUG=สบายพาณิชย์
 | `GEARGAO_PUBLIC_API_URL` | URL ของ GearGao ที่ deploy จริง + `/api/public/products` | ❌ ต้องใส่ (เช่น `https://geargao-saas.vercel.app/api/public/products`) |
 | `GEARGAO_ORG_SLUG` | `สบายพาณิชย์` | ✅ รู้ค่าแล้ว |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob (สลิปโอนเงิน) | ❌ Phase 4 |
-| `PROMPTPAY_ID` | เลข PromptPay รับเงิน | ❌ Phase 4 — เจ้าของร้านต้องให้เลขมา |
+| `PROMPTPAY_ID` | เลข PromptPay รับเงิน | ✅ ตั้งแล้ว (0807673617) ทั้ง local .env และ Vercel production, ทดสอบ generate QR จริงสำเร็จ |
 | `FACEBOOK_PAGE_ID`, `FACEBOOK_PAGE_ACCESS_TOKEN` | Graph API auto-post | ❌ Phase 6 — ต้องสร้าง FB App เอง |
 | `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN` | LINE OA Messaging API | ❌ Phase 7 — ต้องสร้าง LINE Developers channel เอง |
 
@@ -140,7 +140,8 @@ GEARGAO_ORG_SLUG=สบายพาณิชย์
 - `src/app/checkout/page.tsx` — ฟอร์ม ชื่อ/เบอร์/ที่อยู่/LINE ID/หมายเหตุ → POST `/api/orders`
 - `src/app/api/orders/route.ts` (POST, public) — validate สินค้า+จำนวนคงเหลือ (soft check `availableQty >= qty`, ไม่ตัดสต็อกจริงเพราะสต็อกอยู่ฝั่ง GearGao), find-or-create `Customer` ด้วยเบอร์โทร, orderNo = `SP{YYYYMMDD}{running 4 หลัก}` (นับจาก `Order.count` วันนั้นในทรานแซกชันเดียวกับการสร้าง order — มี race window เล็กน้อยถ้าออเดอร์พร้อมกันมากๆ ยอมรับความเสี่ยงนี้เพราะร้านเล็ก), สร้าง `Order`+`OrderItem` (snapshot name/price), ถ้ามี `PROMPTPAY_ID` (env หรือ `AppSettings.promptPayId`) จะ generate QR ด้วย `promptpay-qr`+`qrcode` ทันที — **ถ้ายังไม่ตั้ง PROMPTPAY_ID ออเดอร์ก็ยังสร้างได้ปกติ แค่ไม่มี QR** (ดูด้านล่าง)
 - `src/app/order/[orderNo]/page.tsx` — public, แสดงสรุปออเดอร์+สถานะ, ถ้ามี `promptPayQr` โชว์ QR ให้สแกน ถ้าไม่มีโชว์ข้อความ "ทางร้านจะติดต่อกลับเพื่อแจ้งช่องทางชำระเงิน" แทน (fallback ที่ตั้งใจไว้ เพราะ `PROMPTPAY_ID` ยังว่างอยู่ตอนเขียนฟีเจอร์นี้)
-- **ยังไม่ได้ทำ:** อัปโหลดสลิปโอนเงิน (`@vercel/blob`) เพราะ `BLOB_READ_WRITE_TOKEN` ก็ยังว่างเหมือนกัน — รอ user เตรียมทั้งสอง env var นี้ก่อนค่อยทำต่อ
+- ✅ `PROMPTPAY_ID` = 0807673617 ตั้งค่าแล้วทั้ง local .env และ Vercel production env var (redeploy แล้ว), ทดสอบยิง POST /api/orders จริงบน production ยืนยันว่า generate QR สำเร็จ (ลบ order ทดสอบออกจาก DB แล้ว)
+- **ยังไม่ได้ทำ:** อัปโหลดสลิปโอนเงิน (`@vercel/blob`) เพราะ `BLOB_READ_WRITE_TOKEN` ยังว่างอยู่ — รอ user เตรียม
 - ทดสอบ flow เต็ม (เพิ่มของ→ตะกร้า→checkout→สร้างออเดอร์→ดูใน admin) ผ่าน dev server แล้ว, ลบ order/customer ทดสอบออกจาก DB จริงหลังตรวจสอบเสร็จ
 
 ### ✅ Phase 5 — Admin Order Dashboard (เสร็จแบบย่อ, 2026-07-05)
@@ -215,7 +216,7 @@ npx tsc --noEmit            # type-check (next build ตั้ง ignoreBuildErr
 
 - [ ] Supabase (หรือ Postgres อื่น) project ใหม่ — ใส่ `DATABASE_URL`/`DIRECT_URL`
 - [ ] URL ที่ GearGao-SaaS deploy จริง — ใส่ `GEARGAO_PUBLIC_API_URL`
-- [ ] เลข PromptPay ที่ใช้รับเงิน — ใส่ `PROMPTPAY_ID` (Phase 4)
+- [x] เลข PromptPay ที่ใช้รับเงิน — ใส่ `PROMPTPAY_ID` = 0807673617 แล้ว (2026-07-05)
 - [ ] Facebook App + Page Access Token — Phase 6
 - [ ] LINE Developers Messaging API Channel (Secret + Access Token) — Phase 7
 - [ ] ตัดสินใจว่าจะ deploy โปรเจกต์นี้ที่ไหน (Vercel แนะนำ เพื่อความสอดคล้องกับ GearGao)
