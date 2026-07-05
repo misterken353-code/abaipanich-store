@@ -1,0 +1,183 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// ADMIN (single-tenant — ร้านเดียว ไม่มี organizationId)
+// ============================================================
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// ============================================================
+// SYNC — cache สต็อก/รูปที่ดึงมาจาก GearGao-SaaS (read-only)
+// ============================================================
+
+model SyncedProduct {
+  id            String   @id @default(cuid())
+  sourceId      String   @unique // Product.id ฝั่ง GearGao
+  code          String
+  name          String
+  description   String?
+  categoryName  String?
+  unitName      String?
+  salePrice     Decimal  @default(0)
+  image1Url     String?
+  image2Url     String?
+  image3Url     String?
+  image4Url     String?
+  availableQty  Int      @default(0)
+  isPreOrder    Boolean  @default(false)
+  lastSyncedAt  DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  salePageItems SalePageItem[]
+  orderItems    OrderItem[]
+
+  @@index([code])
+}
+
+// ============================================================
+// SALE PAGE — เพจขายที่แอดมินคัดสินค้ามาจัด
+// ============================================================
+
+model SalePage {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String?
+  coverUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items         SalePageItem[]
+  facebookPosts FacebookPost[]
+  orders        Order[]
+}
+
+model SalePageItem {
+  id             String   @id @default(cuid())
+  salePageId     String
+  salePage       SalePage @relation(fields: [salePageId], references: [id], onDelete: Cascade)
+  productId      String
+  product        SyncedProduct @relation(fields: [productId], references: [id])
+  sortOrder      Int      @default(0)
+  priceOverride  Decimal?
+  caption        String?
+  createdAt      DateTime @default(now())
+
+  @@unique([salePageId, productId])
+}
+
+// ============================================================
+// ลูกค้า / ออเดอร์
+// ============================================================
+
+model Customer {
+  id         String   @id @default(cuid())
+  name       String
+  phone      String
+  address    String?
+  lineUserId String?
+  createdAt  DateTime @default(now())
+
+  orders Order[]
+
+  @@index([phone])
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  SHIPPED
+  CANCELLED
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  orderNo       String      @unique
+  customerId    String
+  customer      Customer    @relation(fields: [customerId], references: [id])
+  salePageId    String?
+  salePage      SalePage?   @relation(fields: [salePageId], references: [id])
+  status        OrderStatus @default(PENDING_PAYMENT)
+  totalAmount   Decimal
+  note          String?
+  promptPayQr   String?     @db.Text
+  slipUrl       String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  items          OrderItem[]
+  lineMessageLogs LineMessageLog[]
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String
+  product    SyncedProduct @relation(fields: [productId], references: [id])
+  nameSnapshot String
+  priceSnapshot Decimal
+  quantity   Int
+}
+
+// ============================================================
+// FACEBOOK AUTO-POST (Phase 6)
+// ============================================================
+
+model FacebookPost {
+  id         String   @id @default(cuid())
+  salePageId String
+  salePage   SalePage @relation(fields: [salePageId], references: [id], onDelete: Cascade)
+  pageId     String
+  postId     String?
+  permalink  String?
+  status     String   @default("PENDING") // PENDING | POSTED | FAILED
+  error      String?
+  createdAt  DateTime @default(now())
+}
+
+// ============================================================
+// LINE OA MESSAGING API (Phase 7)
+// ============================================================
+
+model LineMessageLog {
+  id         String   @id @default(cuid())
+  orderId    String?
+  order      Order?   @relation(fields: [orderId], references: [id])
+  lineUserId String
+  direction  String   // IN | OUT
+  message    String   @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([lineUserId])
+}
+
+// ============================================================
+// SETTINGS (singleton row)
+// ============================================================
+
+model AppSettings {
+  id                     String  @id @default("singleton")
+  promptPayId            String?
+  facebookPageId         String?
+  facebookPageAccessToken String? @db.Text
+  lineChannelSecret      String? @db.Text
+  lineChannelAccessToken String? @db.Text
+  updatedAt              DateTime @updatedAt
+}
