@@ -206,6 +206,16 @@ GEARGAO_ORG_SLUG=สบายพาณิชย์
 9. กลับไปที่ `/admin/settings` รีเฟรชหน้า → จะเห็น userId ของเจ้าของร้านในตาราง "ข้อความล่าสุด" → copy ไปใส่ช่อง "LINE User ID ของร้าน" แล้วบันทึก
 10. ทดสอบสั่งซื้อ 1 ออเดอร์จากหน้าเว็บ → ควรมีข้อความแจ้งเตือนเข้า LINE ของเจ้าของร้านทันที
 
+**✅ อัปเดต (2026-07-05 เย็น):** user กรอก Channel Secret/Access Token ใน `/admin/settings` แล้วจริง (ยืนยันด้วยการยิง HMAC signature จริงเข้า webhook production — ผ่าน, log เข้า DB ถูกต้อง) — เหลือแค่ตั้ง Webhook URL ในหน้า LINE Console (ข้อ 6) และหา/บันทึก Shop User ID (ข้อ 8-9)
+
+### Rich Menu (สร้างแล้ว 2026-07-05)
+สร้างและ publish rich menu จริงบน LINE OA ของร้านแล้ว ผ่าน Messaging API โดยตรง (ไม่ผ่านหน้าเว็บ, รันครั้งเดียวจาก script):
+- `scripts/gen-richmenu.ts` — generate ภาพเมนู 2500x843px ด้วย `sharp` (SVG → PNG), ออกแบบ 3 คอลัมน์เท่ากัน: "เลือกซื้อสินค้า" (ไอคอนถุง) / "ตะกร้าของฉัน" (ไอคอนรถเข็น) / "ติดต่อร้าน" (ไอคอนแชท) บนพื้นเขียว emerald ให้ตรงธีมเว็บ — รันด้วย `npx tsx scripts/gen-richmenu.ts` จะได้ `scripts/richmenu.png` (คอมมิตไว้ในโปรเจกต์เป็นตัวอย่าง/แก้ไขต่อได้)
+- `scripts/create-richmenu.ts` — เรียก LINE Messaging API 3 ขั้นตอน (ต้องมี `AppSettings.lineChannelAccessToken` ตั้งไว้แล้ว): (1) `POST /v2/bot/richmenu` สร้าง object + areas action (คอลัมน์ 1-2 เป็น `uri` ไปหน้าแรก/`/cart`, คอลัมน์ 3 เป็น `message` ส่งข้อความ "สนใจสอบถามสินค้าค่ะ" แทนลูกค้า), (2) `POST api-data.line.me/.../content` อัปโหลดภาพ, (3) `POST /v2/bot/user/all/richmenu/{id}` ตั้งเป็น default ให้ทุกคน — รันด้วย `npx tsx -r dotenv/config scripts/create-richmenu.ts`
+- เพิ่ม `sharp` เป็น devDependency (ไม่ได้อยู่ในนี้มาก่อน แต่มี transitively จาก dependency อื่นอยู่แล้ว — ใส่ตรงๆ กัน version เปลี่ยนแล้ว script พัง)
+- **ยืนยันแล้วว่า publish สำเร็จจริง** — เรียก `GET /v2/bot/user/all/richmenu` คืนค่า richMenuId ตรงกับที่สร้างไว้
+- ถ้าต้องการแก้ไขดีไซน์ภายหลัง: แก้ SVG ใน `gen-richmenu.ts` → รันสร้างภาพใหม่ → รัน `create-richmenu.ts` อีกรอบ (จะสร้าง rich menu ใหม่และตั้งเป็น default แทนอันเก่า — อันเก่าไม่ถูกลบอัตโนมัติ ถ้าต้องการลบให้เรียก `DELETE /v2/bot/richmenu/{richMenuId}` เพิ่มเอง)
+
 ## Pattern ที่ reuse จาก GearGao-SaaS (มีโค้ดตัวอย่างพร้อมใช้)
 
 | ต้องการทำอะไร | ดูตัวอย่างที่ |
