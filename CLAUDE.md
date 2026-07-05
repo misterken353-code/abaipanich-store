@@ -206,6 +206,16 @@ User อยากให้ระบบดึงชื่อจากบัญช
 - เพิ่มลิงก์ "ออเดอร์ลูกค้า" ใน sidebar (`src/app/admin/layout.tsx`)
 - **ยังไม่ได้ทำ:** filter by status ในหน้า list (ทำ list ธรรมดาไปก่อนเพราะยังมีออเดอร์น้อย)
 
+### ✅ ปุ่ม "รับออเดอร์" + workflow เร็วขึ้นสำหรับแอดมิน (เสร็จ, 2026-07-05)
+**เป้าหมาย:** แอดมินอยากมีปุ่มกด "รับออเดอร์" ที่แจ้งลูกค้าอัตโนมัติผ่าน LINE ว่าร้านรับออเดอร์แล้ว และอยากมีปุ่ม "บันทึก" ที่เด้งกลับไปหน้า list ให้จัดการออเดอร์ถัดไปเร็วขึ้น (ไม่ต้องกดลิงก์ sidebar เอง)
+
+- Schema: เพิ่ม `Order.acknowledgedAt DateTime?` — ใช้เป็นทั้ง flag กันกดซ้ำ (idempotent) และ timestamp
+- `src/app/api/admin/orders/[id]/acknowledge/route.ts` (POST, ต้อง `auth()`) — ถ้า `acknowledgedAt` มีค่าอยู่แล้วคืน `{alreadyAcknowledged:true}` ทันทีไม่ทำอะไรซ้ำ, ถ้ายัง set `acknowledgedAt = now()` แล้วถ้า `customer.lineUserId` มีค่า จะ `pushLineMessage(...)` ข้อความ "🙏 ร้านสบายพาณิชย์ได้รับออเดอร์ {orderNo} ของคุณแล้ว กำลังจัดเตรียมสินค้าให้นะคะ" — ถ้าลูกค้าไม่มี LINE ผูกไว้ก็ยัง mark ว่ารับแล้วได้ปกติ แค่ไม่ส่งข้อความ (คืนค่า `notified:false`)
+- `AcknowledgeButton.tsx` (client) — ปุ่ม "📦 รับออเดอร์" → หลังกดสำเร็จเปลี่ยนเป็น "✓ รับออเดอร์แล้ว" (disabled ถาวร กันกดซ้ำฝั่ง UI ด้วย) พร้อมข้อความบอกว่าแจ้งลูกค้าสำเร็จหรือไม่ได้แจ้งเพราะไม่มี LINE
+- `DoneButton.tsx` (client) — ปุ่ม "✓ บันทึกและไปดูออเดอร์ถัดไป" ท้ายหน้า **ไม่ได้เรียก API ใดๆ เพิ่ม** (สถานะ/รับออเดอร์ save ทันทีตั้งแต่กดปุ่มของมันเองอยู่แล้ว) แค่ `router.push("/admin/orders")` ให้ไหลลื่นไปทำรายการถัดไป
+- `src/app/admin/orders/page.tsx` เพิ่มคอลัมน์ "รับแล้ว" แสดง ✓ (เขียว, hover ดู timestamp) หรือ — ให้แอดมินกวาดตาดูได้เร็วว่าออเดอร์ไหนยังไม่ได้กดรับ
+- ทดสอบ flow เต็มบน dev server: สร้างออเดอร์ทดสอบ (ลูกค้าไม่มี LINE) → กด "รับออเดอร์" → เห็นข้อความ "ไม่ได้แจ้งเตือน" ถูกต้อง → กด "บันทึกและไปดูออเดอร์ถัดไป" → เด้งกลับ list เห็น ✓ ในคอลัมน์ "รับแล้ว" ตรงแถว, ลบ order/customer ทดสอบออกจาก DB แล้ว (ระวัง: ใน DB มีออเดอร์จริงของเจ้าของร้านปนอยู่ SP202607050001-004 ไม่ได้แตะต้อง)
+
 ### 🐛 บั๊กที่พบและแก้แล้ว: `src/proxy.ts` เช็คชื่อ cookie ผิด (2026-07-05)
 `src/proxy.ts` เช็ค cookie ชื่อ `next-auth.session-token` / `__Secure-next-auth.session-token` (ชื่อของ **NextAuth v4**) แต่โปรเจกต์นี้ใช้ **NextAuth v5 (Auth.js)** ซึ่ง set cookie ชื่อ `authjs.session-token` / `__Secure-authjs.session-token` แทน (ยืนยันจาก `node_modules/@auth/core/lib/utils/cookie.js`)
 
