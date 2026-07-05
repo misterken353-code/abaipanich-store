@@ -189,5 +189,6 @@ model AppSettings {
   facebookPageAccessToken String? @db.Text
   lineChannelSecret      String? @db.Text
   lineChannelAccessToken String? @db.Text
+  lineShopUserId         String? // userId ของแอดมิน/กลุ่มร้าน ที่จะ push แจ้งออเดอร์ใหม่/โลเคชั่นเข้าไป
   updatedAt              DateTime @updatedAt
 }

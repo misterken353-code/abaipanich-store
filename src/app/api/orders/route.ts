@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ShippingMethod } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { notifyShop } from "@/lib/line";
 import generatePayload from "promptpay-qr";
 import QRCode from "qrcode";
+
+const SHIPPING_LABEL: Record<string, string> = {
+  PICKUP: "รับเองหน้าร้าน",
+  MOTORCYCLE: "เรียกม้าเร็วจัดส่ง",
+  FREIGHT: "จัดส่งทางขนส่ง",
+};
 
 interface OrderItemInput {
   productId: string;
@@ -118,6 +125,30 @@ export async function POST(req: NextRequest) {
       } catch (e) {
         console.error("[orders] QR generation failed:", e);
       }
+    }
+
+    try {
+      const itemLines = items
+        .map((item) => {
+          const product = productMap.get(item.productId)!;
+          return `- ${product.name} x${item.qty}`;
+        })
+        .join("\n");
+      const mapsLine =
+        customerLat != null && customerLng != null
+          ? `\n📍 https://www.google.com/maps?q=${customerLat},${customerLng}`
+          : "";
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+      await notifyShop(
+        `🛒 ออเดอร์ใหม่ ${order.orderNo}\n` +
+          `ลูกค้า: ${customer.name.trim()} (${customer.phone.trim()})\n` +
+          `${itemLines}\n` +
+          `ยอดรวม: ${totalAmount.toLocaleString("th-TH")} บาท\n` +
+          `จัดส่ง: ${SHIPPING_LABEL[shippingMethod] ?? shippingMethod}${mapsLine}` +
+          (appUrl ? `\n\nดูรายละเอียด: ${appUrl}/admin/orders/${order.id}` : "")
+      );
+    } catch (e) {
+      console.error("[orders] LINE notify failed:", e);
     }
 
     return NextResponse.json({ orderNo: order.orderNo });
