@@ -42,6 +42,7 @@ export default async function AdminOrdersPage() {
           <thead className="bg-gray-50 text-left text-gray-500">
             <tr>
               <th className="px-4 py-2">เลขที่ออเดอร์</th>
+              <th className="px-4 py-2">รับแล้ว</th>
               <th className="px-4 py-2">ลูกค้า</th>
               <th className="px-4 py-2">รายการ</th>
               <th className="px-4 py-2">จัดส่ง</th>
@@ -58,6 +59,15 @@ export default async function AdminOrdersPage() {
                   <Link href={`/admin/orders/${o.id}`} className="font-medium text-green-700 hover:underline">
                     {o.orderNo}
                   </Link>
+                </td>
+                <td className="px-4 py-2">
+                  {o.acknowledgedAt ? (
+                    <span className="text-emerald-600 font-bold" title={o.acknowledgedAt.toLocaleString("th-TH")}>
+                      ✓
+                    </span>
+                  ) : (
+                    <span className="text-gray-300">—</span>
+                  )}
                 </td>
                 <td className="px-4 py-2">
                   {o.customer.name}
@@ -81,7 +91,7 @@ export default async function AdminOrdersPage() {
             ))}
             {orders.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-400">
                   ยังไม่มีออเดอร์
                 </td>
               </tr>

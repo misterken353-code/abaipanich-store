@@ -134,6 +134,7 @@ model Order {
   note            String?
   promptPayQr     String?        @db.Text
   slipUrl         String?
+  acknowledgedAt  DateTime?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 

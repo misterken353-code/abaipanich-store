@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import StatusButtons from "./StatusButtons";
+import AcknowledgeButton from "./AcknowledgeButton";
+import DoneButton from "./DoneButton";
 
 const SHIPPING_LABEL: Record<string, string> = {
   PICKUP: "รับเองหน้าร้าน",
@@ -33,6 +35,11 @@ export default async function AdminOrderDetailPage({
       <p className="mb-6 text-sm text-gray-400">
         สั่งเมื่อ {order.createdAt.toLocaleString("th-TH")}
       </p>
+
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5">
+        <h2 className="mb-3 font-semibold text-gray-700">รับออเดอร์</h2>
+        <AcknowledgeButton orderId={order.id} acknowledgedAt={order.acknowledgedAt?.toISOString() ?? null} />
+      </div>
 
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5">
         <h2 className="mb-3 font-semibold text-gray-700">สถานะออเดอร์</h2>
@@ -95,6 +102,10 @@ export default async function AdminOrderDetailPage({
             </a>
           </p>
         )}
+      </div>
+
+      <div className="mt-6">
+        <DoneButton />
       </div>
     </div>
   );
