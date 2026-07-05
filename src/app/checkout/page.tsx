@@ -34,7 +34,6 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState("");
   const [lineUserId, setLineUserId] = useState<string | null>(null);
   const [prefilled, setPrefilled] = useState(false);
-  const [editingPrefilled, setEditingPrefilled] = useState(false);
   const [checkingPhone, setCheckingPhone] = useState(false);
   const [note, setNote] = useState("");
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod>("PICKUP");
@@ -67,7 +66,6 @@ export default function CheckoutPage() {
         setAddress(data.customer.address ?? "");
         setLineUserId(data.customer.lineUserId ?? null);
         setPrefilled(true);
-        setEditingPrefilled(false);
       } else {
         setPrefilled(false);
       }
@@ -165,11 +163,6 @@ export default function CheckoutPage() {
     );
   }
 
-  const locked = prefilled && !editingPrefilled;
-  const lockedFieldClass = `${FIELD_CLASS} ${
-    locked ? "border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed" : "border-gray-200 bg-white focus:ring-2 focus:ring-emerald-400"
-  }`;
-
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-emerald-700 text-white shadow-lg">
@@ -198,20 +191,9 @@ export default function CheckoutPage() {
           </div>
 
           {prefilled && (
-            <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2">
-              <p className="text-xs text-emerald-700 font-semibold">
-                ✓ พบข้อมูลลูกค้าเดิม — ดึงชื่อ/ที่อยู่จากคำสั่งซื้อก่อนหน้าให้แล้ว
-              </p>
-              {!editingPrefilled && (
-                <button
-                  type="button"
-                  onClick={() => setEditingPrefilled(true)}
-                  className="text-xs font-bold text-emerald-700 underline shrink-0 ml-3"
-                >
-                  แก้ไขข้อมูล
-                </button>
-              )}
-            </div>
+            <p className="text-xs text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2">
+              ✓ พบข้อมูลลูกค้าเดิม — ดึงชื่อ/ที่อยู่จากคำสั่งซื้อก่อนหน้าให้แล้ว แก้ไขได้ตามต้องการ
+            </p>
           )}
 
           <div>
@@ -219,8 +201,7 @@ export default function CheckoutPage() {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              disabled={locked}
-              className={lockedFieldClass}
+              className={`${FIELD_CLASS} border-gray-200 bg-white focus:ring-2 focus:ring-emerald-400`}
               placeholder="ชื่อผู้รับสินค้า"
             />
           </div>
@@ -280,9 +261,8 @@ export default function CheckoutPage() {
               <textarea
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                disabled={locked}
                 rows={3}
-                className={lockedFieldClass}
+                className={`${FIELD_CLASS} border-gray-200 bg-white focus:ring-2 focus:ring-emerald-400`}
                 placeholder="ที่อยู่สำหรับจัดส่งสินค้า"
               />
             </div>
