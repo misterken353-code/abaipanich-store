@@ -262,11 +262,38 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
       </main>
 
       {/* ===== FOOTER ===== */}
-      <footer className="bg-emerald-700 text-emerald-200 text-center py-6 mt-10 text-sm">
-        <p className="font-bold text-white text-base mb-1">สบายพาณิชย์</p>
-        <p className="mt-3 text-emerald-300 text-xs">
-          Pre-order รับสินค้าภายใน 3–5 วันทำการ
-        </p>
+      <footer className="relative bg-gradient-to-b from-[#0a3d2c] to-[#04241a] text-center py-10 mt-10 overflow-hidden">
+        <div className="absolute top-4 left-4 w-8 h-8 border-t border-l border-amber-400/40" />
+        <div className="absolute top-4 right-4 w-8 h-8 border-t border-r border-amber-400/40" />
+        <div className="absolute bottom-4 left-4 w-8 h-8 border-b border-l border-amber-400/40" />
+        <div className="absolute bottom-4 right-4 w-8 h-8 border-b border-r border-amber-400/40" />
+
+        <div className="relative max-w-xl mx-auto px-4">
+          <p className="font-serif-th font-bold text-amber-200 text-2xl sm:text-3xl tracking-wide">
+            สบายพาณิชย์
+          </p>
+          <div className="w-16 h-px bg-amber-400/60 mx-auto my-3" />
+
+          <p className="text-emerald-100/90 text-sm leading-relaxed">
+            📍 63 หมู่ 3 บ้านสบาย ต.รุ่งระวี อ.น้ำเกลี้ยง จ.ศรีสะเกษ 33130
+          </p>
+          <a
+            href="tel:0956123937"
+            className="inline-block mt-1 text-amber-200 text-sm font-semibold hover:text-amber-100"
+          >
+            📞 095-612-3937
+          </a>
+
+          <div className="mt-5 inline-flex items-center gap-2 bg-amber-400/10 border border-amber-400/30 rounded-full px-5 py-2">
+            <span className="text-amber-200 text-xs sm:text-sm font-semibold">
+              🛵 สินค้าพร้อมส่งทุกรายการ รับเองที่หน้าร้าน หรือให้ม้าเร็ววิ่งส่งถึงมือคุณ
+            </span>
+          </div>
+
+          <p className="mt-4 text-emerald-300/70 text-xs">
+            Pre-order รับสินค้าภายใน 3–5 วันทำการ
+          </p>
+        </div>
       </footer>
 
       {/* ===== FLOATING CART BAR ===== */}
