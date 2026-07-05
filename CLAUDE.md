@@ -144,6 +144,17 @@ GEARGAO_ORG_SLUG=สบายพาณิชย์
 - **ยังไม่ได้ทำ:** อัปโหลดสลิปโอนเงิน (`@vercel/blob`) เพราะ `BLOB_READ_WRITE_TOKEN` ยังว่างอยู่ — รอ user เตรียม
 - ทดสอบ flow เต็ม (เพิ่มของ→ตะกร้า→checkout→สร้างออเดอร์→ดูใน admin) ผ่าน dev server แล้ว, ลบ order/customer ทดสอบออกจาก DB จริงหลังตรวจสอบเสร็จ
 
+### ✅ วิธีจัดส่ง 3 แบบ (เสร็จ, 2026-07-05)
+**เป้าหมาย:** ให้ลูกค้าเลือกวิธีรับสินค้าตอน checkout แทนที่จะกรอกที่อยู่อย่างเดียว
+
+- Schema: เพิ่ม `enum ShippingMethod { PICKUP MOTORCYCLE FREIGHT }` และฟิลด์ `Order.shippingMethod` (default `PICKUP`), `Order.shippingAddress` (String?, เก็บที่อยู่ต่อออเดอร์แทนที่จะพึ่ง `Customer.address` อย่างเดียว — แก้ latent bug เดิมที่ที่อยู่จาก checkout form ไม่ถูกบันทึกถ้าเบอร์โทรตรงกับลูกค้าเก่า), `Order.customerLat`/`Order.customerLng` (Float?)
+- **⚠️ สำคัญ — `prisma db push` ค้างถ้าใช้ `DATABASE_URL` (pooled port 6543):** ต้องสั่งผ่าน direct connection แทน เช่น `npx prisma db push --accept-data-loss --url "<DIRECT_URL ค่าจริงจาก .env>"` (ใช้ `--url` flag override, ห้ามลืม `--accept-data-loss` ถ้ามีคำเตือน) — เจอปัญหานี้ระหว่างเซสชันนี้ ค้างไป 2 รอบก่อนจะลองสลับไปใช้ DIRECT_URL แล้วผ่านใน 2.3s พอดี
+- `src/app/checkout/page.tsx` — radio 3 ตัวเลือก: **รับเองหน้าร้าน** (ไม่มีค่าส่ง), **เรียกม้าเร็วจัดส่ง** (โชว์ข้อความอัตราค่าส่ง "เริ่มต้น 15 บาท กม.แรก กม.ที่ 2 ขึ้นไป กม.ละ 5 บาท" + คำเตือนว่าค่าส่งไม่รวมยอดชำระ ชำระแยกให้คนขับ + ปุ่ม "แชร์โลเคชั่น" เรียก `navigator.geolocation.getCurrentPosition` เก็บ lat/lng), **จัดส่งทางขนส่ง** (ชำระค่าส่งปลายทาง) — ที่อยู่จัดส่งเป็น required เฉพาะ MOTORCYCLE/FREIGHT (ซ่อนไว้ถ้าเลือก PICKUP), บังคับต้องกดแชร์โลเคชั่นก่อน submit ถ้าเลือก MOTORCYCLE
+- `src/app/api/orders/route.ts` — validate `shippingMethod` ต้องอยู่ใน enum, บันทึก `shippingAddress`/`customerLat`/`customerLng` ลง Order เสมอ (ไม่ใช่แค่ตอนสร้าง customer ใหม่)
+- `src/app/order/[orderNo]/page.tsx` และ `src/app/admin/orders/[id]/page.tsx` — แสดงวิธีจัดส่ง + ข้อความอัตราค่าส่ง + ลิงก์ `https://www.google.com/maps?q=lat,lng` ถ้ามีพิกัด (เปิด Google Maps ให้เจ้าของร้าน/คนขับดูตำแหน่งได้ทันที)
+- **ตั้งใจไม่รวมค่าส่งม้าเร็ว/ขนส่งเข้า `totalAmount` หรือ QR PromptPay** เพราะเป็นค่าใช้จ่ายที่ชำระแยกนอกระบบ (ให้คนขับ/บริษัทขนส่งโดยตรง) ไม่ใช่ยอดที่ร้านเก็บเอง — ถ้าในอนาคตต้องการให้ระบบคำนวณค่าส่งจริงตามระยะทาง จะต้องมีพิกัดร้าน + Google Maps Distance Matrix API (ยังไม่ได้ทำ)
+- ทดสอบผ่าน dev server (mock geolocation + submit จริง) และ tsc/build ผ่านสะอาด
+
 ### ✅ Phase 5 — Admin Order Dashboard (เสร็จแบบย่อ, 2026-07-05)
 - `src/app/admin/orders/page.tsx` — list ทุกออเดอร์ (ล่าสุดก่อน), แสดงลูกค้า/จำนวนรายการ/ยอดรวม/สถานะ
 - `src/app/admin/orders/[id]/page.tsx` + `StatusButtons.tsx` (client) — รายละเอียดออเดอร์เต็ม + ปุ่มเปลี่ยนสถานะ (`PENDING_PAYMENT`/`PAID`/`SHIPPED`/`CANCELLED`)
