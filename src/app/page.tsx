@@ -1,8 +1,25 @@
-export default function HomePage() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
-      <h1 className="text-2xl font-semibold">สบายพาณิชย์</h1>
-      <p className="text-gray-600">ระบบขายสินค้าออนไลน์ — กำลังพัฒนา</p>
-    </main>
-  );
+import { prisma } from "@/lib/prisma";
+import StorefrontClient from "./StorefrontClient";
+
+export const revalidate = 60;
+
+export default async function HomePage() {
+  const products = await prisma.syncedProduct.findMany({
+    orderBy: { code: "asc" },
+  });
+
+  const items = products.map((p) => ({
+    id: p.id,
+    code: p.code,
+    name: p.name,
+    categoryName: p.categoryName,
+    unitName: p.unitName,
+    salePrice: Number(p.salePrice),
+    image1Url: p.image1Url,
+    image2Url: p.image2Url,
+    availableQty: p.availableQty,
+    isPreOrder: p.isPreOrder,
+  }));
+
+  return <StorefrontClient items={items} />;
 }

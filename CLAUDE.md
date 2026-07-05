@@ -1,7 +1,7 @@
 # SabaiPanich-Store — แผนโปรเจกต์ฉบับเต็ม (สำหรับ AI ที่มาทำงานต่อ)
 
 > ไฟล์นี้คือ single source of truth ของโปรเจกต์นี้ อ่านทั้งหมดก่อนเริ่มเขียนโค้ดต่อ
-> อัปเดตล่าสุด: 2026-07-05 (หลัง Phase 3 เสร็จ)
+> อัปเดตล่าสุด: 2026-07-05 (หลังเพิ่มหน้าแรกเป็น catalog หลัก)
 
 ## เป้าหมายโปรเจกต์
 
@@ -57,7 +57,8 @@ GEARGAO_ORG_SLUG=สบายพาณิชย์
 | `src/proxy.ts` | ป้องกันเฉพาะ `/admin/*` (เช็ค next-auth session cookie) |
 | `src/types/next-auth.d.ts` | Type augmentation สำหรับ session.user.id |
 | `src/app/layout.tsx`, `globals.css` | Root layout, ฟอนต์ Sarabun, Tailwind |
-| `src/app/page.tsx` | หน้าแรก (placeholder — จะกลายเป็น landing/redirect ไปเพจขายล่าสุดใน Phase 3+) |
+| `src/app/page.tsx` | หน้าแรก — **catalog หลัก** ดึงสินค้าทั้งหมดจาก `SyncedProduct` (server component) ส่งให้ `StorefrontClient` |
+| `src/app/StorefrontClient.tsx` | Client component ของหน้าแรก — แท็บพร้อมส่ง/Pre-order, ค้นหา, filter หมวดหมู่ (แบบเดียวกับ [GearGao-SaaS/src/app/store/[slug]/page.tsx](../GearGao-SaaS/src/app/store/%5Bslug%5D/page.tsx)) |
 | `src/app/login/page.tsx` | หน้า login แอดมิน (client component, เรียก `signIn` จาก next-auth/react) |
 | `src/app/admin/layout.tsx` | Layout แอดมิน (เช็ค session, sidebar nav, sign out) |
 | `src/app/admin/page.tsx` | Dashboard ภาพรวม (จำนวนสินค้า, sync ล่าสุด) |
@@ -123,6 +124,14 @@ GEARGAO_ORG_SLUG=สบายพาณิชย์
 - ใช้ `<img>` ธรรมดา (ไม่ใช่ `next/image`) ทั้งใน editor และ storefront ให้ตรง convention เดิมที่ `/admin/products` ใช้อยู่แล้ว — เพราะไม่ทราบแน่ชัดว่า `SyncedProduct.image*Url` มาจาก host ไหนบ้าง (next/image จะ error ถ้า host ไม่อยู่ใน `remotePatterns`)
 - ยังไม่ได้ implement: อัปโหลดรูป cover เอง (ตอนนี้กรอก URL ตรงๆ), drag-and-drop reorder (ใช้ปุ่มขึ้น/ลงแทน)
 - ตรวจแล้วด้วย `npx tsc --noEmit` และ `npx next build` ผ่านสะอาดทั้งคู่
+
+### ✅ หน้าแรก (`/`) — Catalog หลักพร้อมหมวดหมู่ (เสร็จ, นอกเหนือ phase plan เดิม)
+**เป้าหมาย:** ลูกค้าเข้าเว็บแล้วเห็นสินค้าทั้งหมดทันที ไม่ต้องรอแอดมินสร้าง Sale Page ก่อน — เดิมหน้าแรกเป็น placeholder เฉยๆ
+
+- `src/app/page.tsx` (server component) ดึง `SyncedProduct` ทั้งหมด, `Number()` ทุก Decimal ก่อนส่งให้ client
+- `src/app/StorefrontClient.tsx` (client component) — แท็บ "สินค้าพร้อมส่ง" / "สั่งจอง (Pre-order)" (แยกจาก `isPreOrder`), ค้นหาชื่อ/รหัส, filter หมวดหมู่แบบ pill (ทำเฉพาะหมวดที่มีในแท็บนั้น), การ์ดสินค้าแสดงรูป/ราคา/badge คงเหลือ — โครงสร้าง UI copy มาจาก GearGao's `/store/[slug]` ที่พิสูจน์แล้วว่าใช้งานได้ดี
+- **⚠️ พบระหว่างทดสอบ:** GearGao-SaaS's public API (`src/app/api/public/products/route.ts`) และหน้า `/store/[slug]` **ยังไม่ได้ commit/push** (untracked ใน git ณ ตอนที่เขียนฟีเจอร์นี้) — แปลว่า `GEARGAO_PUBLIC_API_URL` ที่ชี้ไป production (`https://geargao-saas.vercel.app/api/public/products`) จะตอบ 404 จนกว่าฝั่ง GearGao-SaaS จะ commit+push+deploy ก่อน ต้องเช็ค/แจ้ง user ก่อนกด sync จริงหรือ deploy หน้านี้ขึ้น production
+- ยังไม่ได้ sync ข้อมูลจริงเข้า `SyncedProduct` เลย (0 records ตอนตรวจสอบ) — ต้อง login แอดมิน (`admin@sabaipanich.com`, ยังไม่ทราบรหัสผ่าน) แล้วกด sync ที่ `/admin/products` หลัง GearGao deploy พร้อม
 
 ### ⬜ Phase 4 — Cart + Checkout + Order + PromptPay QR (ถัดไป)
 **เป้าหมาย:** ลูกค้าเลือกสินค้าใส่ตะกร้า → กรอกฟอร์ม → ได้ QR PromptPay ทันที
