@@ -23,14 +23,19 @@ const PAYMENT_OPTIONS: { value: PaymentMethod; label: string; desc: string }[] =
   { value: "COD", label: "จ่ายตอนรับของ", desc: "ชำระเงินสดเมื่อได้รับสินค้า" },
 ];
 
+const FIELD_CLASS = "w-full rounded-xl border px-4 py-2 text-sm outline-none transition-colors";
+
 export default function CheckoutPage() {
   const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [name, setName] = useState("");
   const [address, setAddress] = useState("");
-  const [lineUserId, setLineUserId] = useState("");
+  const [lineUserId, setLineUserId] = useState<string | null>(null);
+  const [prefilled, setPrefilled] = useState(false);
+  const [editingPrefilled, setEditingPrefilled] = useState(false);
+  const [checkingPhone, setCheckingPhone] = useState(false);
   const [note, setNote] = useState("");
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod>("PICKUP");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("TRANSFER");
@@ -49,6 +54,29 @@ export default function CheckoutPage() {
     setLocation(null);
     setLocationError(null);
   }, [shippingMethod]);
+
+  async function handlePhoneBlur() {
+    const p = phone.trim();
+    if (p.length < 9) return;
+    setCheckingPhone(true);
+    try {
+      const res = await fetch(`/api/customers/lookup?phone=${encodeURIComponent(p)}`);
+      const data = await res.json();
+      if (data.customer) {
+        setName(data.customer.name ?? "");
+        setAddress(data.customer.address ?? "");
+        setLineUserId(data.customer.lineUserId ?? null);
+        setPrefilled(true);
+        setEditingPrefilled(false);
+      } else {
+        setPrefilled(false);
+      }
+    } catch {
+      // เงียบไว้ — ไม่ใช่ error ร้ายแรง แค่ prefill ไม่สำเร็จ ลูกค้ากรอกเองได้ตามปกติ
+    } finally {
+      setCheckingPhone(false);
+    }
+  }
 
   function shareLocation() {
     if (!navigator.geolocation) {
@@ -97,7 +125,7 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          customer: { name: name.trim(), phone: phone.trim(), address: address.trim() || null, lineUserId: lineUserId.trim() || null },
+          customer: { name: name.trim(), phone: phone.trim(), address: address.trim() || null, lineUserId },
           note: note.trim() || null,
           shippingMethod,
           paymentMethod,
@@ -137,6 +165,11 @@ export default function CheckoutPage() {
     );
   }
 
+  const locked = prefilled && !editingPrefilled;
+  const lockedFieldClass = `${FIELD_CLASS} ${
+    locked ? "border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed" : "border-gray-200 bg-white focus:ring-2 focus:ring-emerald-400"
+  }`;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-emerald-700 text-white shadow-lg">
@@ -153,21 +186,42 @@ export default function CheckoutPage() {
       <main className="max-w-3xl mx-auto px-4 py-6">
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">ชื่อ-นามสกุล *</label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
-              placeholder="ชื่อผู้รับสินค้า"
-            />
-          </div>
-          <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">เบอร์โทรศัพท์ *</label>
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              onBlur={handlePhoneBlur}
+              className={`${FIELD_CLASS} border-gray-200 bg-white focus:ring-2 focus:ring-emerald-400`}
               placeholder="08x-xxx-xxxx"
+            />
+            {checkingPhone && <p className="text-xs text-gray-400 mt-1">กำลังตรวจสอบ...</p>}
+          </div>
+
+          {prefilled && (
+            <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2">
+              <p className="text-xs text-emerald-700 font-semibold">
+                ✓ พบข้อมูลลูกค้าเดิม — ดึงชื่อ/ที่อยู่จากคำสั่งซื้อก่อนหน้าให้แล้ว
+              </p>
+              {!editingPrefilled && (
+                <button
+                  type="button"
+                  onClick={() => setEditingPrefilled(true)}
+                  className="text-xs font-bold text-emerald-700 underline shrink-0 ml-3"
+                >
+                  แก้ไขข้อมูล
+                </button>
+              )}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">ชื่อ-นามสกุล *</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={locked}
+              className={lockedFieldClass}
+              placeholder="ชื่อผู้รับสินค้า"
             />
           </div>
           <div>
@@ -226,8 +280,9 @@ export default function CheckoutPage() {
               <textarea
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
+                disabled={locked}
                 rows={3}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className={lockedFieldClass}
                 placeholder="ที่อยู่สำหรับจัดส่งสินค้า"
               />
             </div>
@@ -261,21 +316,12 @@ export default function CheckoutPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">LINE ID (ถ้ามี)</label>
-            <input
-              value={lineUserId}
-              onChange={(e) => setLineUserId(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
-              placeholder="สำหรับติดต่อเรื่องออเดอร์"
-            />
-          </div>
-          <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">หมายเหตุ</label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={2}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className={`${FIELD_CLASS} border-gray-200 bg-white focus:ring-2 focus:ring-emerald-400`}
               placeholder="เช่น เวลาที่สะดวกให้จัดส่ง"
             />
           </div>
