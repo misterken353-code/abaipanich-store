@@ -22,6 +22,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/sale-pages" className="rounded-lg px-3 py-2 hover:bg-gray-100">
             เพจขาย
           </Link>
+          <Link href="/admin/orders" className="rounded-lg px-3 py-2 hover:bg-gray-100">
+            ออเดอร์ลูกค้า
+          </Link>
         </nav>
         <form
           action={async () => {

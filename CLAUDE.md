@@ -1,7 +1,7 @@
 # SabaiPanich-Store — แผนโปรเจกต์ฉบับเต็ม (สำหรับ AI ที่มาทำงานต่อ)
 
 > ไฟล์นี้คือ single source of truth ของโปรเจกต์นี้ อ่านทั้งหมดก่อนเริ่มเขียนโค้ดต่อ
-> อัปเดตล่าสุด: 2026-07-05 (หลังเพิ่มหน้าแรกเป็น catalog หลัก)
+> อัปเดตล่าสุด: 2026-07-05 (หลัง Phase 4-5 เสร็จ + แก้บั๊ก proxy.ts + sync ข้อมูลจริงแล้ว)
 
 ## เป้าหมายโปรเจกต์
 
@@ -130,24 +130,32 @@ GEARGAO_ORG_SLUG=สบายพาณิชย์
 
 - `src/app/page.tsx` (server component) ดึง `SyncedProduct` ทั้งหมด, `Number()` ทุก Decimal ก่อนส่งให้ client
 - `src/app/StorefrontClient.tsx` (client component) — แท็บ "สินค้าพร้อมส่ง" / "สั่งจอง (Pre-order)" (แยกจาก `isPreOrder`), ค้นหาชื่อ/รหัส, filter หมวดหมู่แบบ pill (ทำเฉพาะหมวดที่มีในแท็บนั้น), การ์ดสินค้าแสดงรูป/ราคา/badge คงเหลือ — โครงสร้าง UI copy มาจาก GearGao's `/store/[slug]` ที่พิสูจน์แล้วว่าใช้งานได้ดี
-- **⚠️ พบระหว่างทดสอบ:** GearGao-SaaS's public API (`src/app/api/public/products/route.ts`) และหน้า `/store/[slug]` **ยังไม่ได้ commit/push** (untracked ใน git ณ ตอนที่เขียนฟีเจอร์นี้) — แปลว่า `GEARGAO_PUBLIC_API_URL` ที่ชี้ไป production (`https://geargao-saas.vercel.app/api/public/products`) จะตอบ 404 จนกว่าฝั่ง GearGao-SaaS จะ commit+push+deploy ก่อน ต้องเช็ค/แจ้ง user ก่อนกด sync จริงหรือ deploy หน้านี้ขึ้น production
-- ยังไม่ได้ sync ข้อมูลจริงเข้า `SyncedProduct` เลย (0 records ตอนตรวจสอบ) — ต้อง login แอดมิน (`admin@sabaipanich.com`, ยังไม่ทราบรหัสผ่าน) แล้วกด sync ที่ `/admin/products` หลัง GearGao deploy พร้อม
+- **✅ แก้แล้ว (2026-07-05):** GearGao-SaaS's public API + `/store/[slug]` ถูก commit/push/deploy แล้ว, sync สำเร็จ **239 รายการ** เข้า `SyncedProduct`
+- **⚠️ คุณภาพข้อมูลจากต้นทาง (GearGao-SaaS) ยังมีปัญหา ณ ตอน sync:** จาก 239 รายการ — **171 รายการ (72%) salePrice = 0**, **194 รายการ (81%) ถูกจัดหมวดเป็น "เครื่องดื่ม" ทั้งหมดอย่างผิดๆ** (กะปิ/ปลากระป๋อง/เทียนไข ก็โดนจัดเป็นเครื่องดื่ม — เข้าใจว่ามาจาก script `scripts/import-invoice-yongsanguan.ts` ฝั่ง GearGao ที่ import ไม่ได้ตั้งหมวดจริง), มีรูปแค่ 69/239 (29%) **ต้องไปแก้ราคา/หมวดหมู่ที่ฝั่ง GearGao-SaaS ก่อนถือว่า "พร้อมขายจริง"** แล้ว sync ใหม่ (ปุ่ม sync ที่ `/admin/products` เป็น upsert อยู่แล้ว รันซ้ำได้ปลอดภัย)
 
-### ⬜ Phase 4 — Cart + Checkout + Order + PromptPay QR (ถัดไป)
-**เป้าหมาย:** ลูกค้าเลือกสินค้าใส่ตะกร้า → กรอกฟอร์ม → ได้ QR PromptPay ทันที
+### ✅ Phase 4 — Cart + Checkout + Order + PromptPay QR (เสร็จ, 2026-07-05)
+- `src/lib/cart.ts` — cart แบบ client-side ล้วน (`localStorage` key `sabaipanich-cart`, ไม่ใช้ React Context เพราะแต่ละหน้าโหลด cart เองตอน mount) มี `getCart/saveCart/cartCount/cartTotal`
+- `StorefrontClient.tsx` — ปุ่ม "+ ใส่ตะกร้า" ต่อการ์ดสินค้า + floating cart bar (fixed bottom) แสดงจำนวน/ยอดรวม ลิงก์ไป `/cart`
+- `src/app/cart/page.tsx` — client component, ปรับจำนวน/ลบสินค้า, ไปต่อที่ `/checkout`
+- `src/app/checkout/page.tsx` — ฟอร์ม ชื่อ/เบอร์/ที่อยู่/LINE ID/หมายเหตุ → POST `/api/orders`
+- `src/app/api/orders/route.ts` (POST, public) — validate สินค้า+จำนวนคงเหลือ (soft check `availableQty >= qty`, ไม่ตัดสต็อกจริงเพราะสต็อกอยู่ฝั่ง GearGao), find-or-create `Customer` ด้วยเบอร์โทร, orderNo = `SP{YYYYMMDD}{running 4 หลัก}` (นับจาก `Order.count` วันนั้นในทรานแซกชันเดียวกับการสร้าง order — มี race window เล็กน้อยถ้าออเดอร์พร้อมกันมากๆ ยอมรับความเสี่ยงนี้เพราะร้านเล็ก), สร้าง `Order`+`OrderItem` (snapshot name/price), ถ้ามี `PROMPTPAY_ID` (env หรือ `AppSettings.promptPayId`) จะ generate QR ด้วย `promptpay-qr`+`qrcode` ทันที — **ถ้ายังไม่ตั้ง PROMPTPAY_ID ออเดอร์ก็ยังสร้างได้ปกติ แค่ไม่มี QR** (ดูด้านล่าง)
+- `src/app/order/[orderNo]/page.tsx` — public, แสดงสรุปออเดอร์+สถานะ, ถ้ามี `promptPayQr` โชว์ QR ให้สแกน ถ้าไม่มีโชว์ข้อความ "ทางร้านจะติดต่อกลับเพื่อแจ้งช่องทางชำระเงิน" แทน (fallback ที่ตั้งใจไว้ เพราะ `PROMPTPAY_ID` ยังว่างอยู่ตอนเขียนฟีเจอร์นี้)
+- **ยังไม่ได้ทำ:** อัปโหลดสลิปโอนเงิน (`@vercel/blob`) เพราะ `BLOB_READ_WRITE_TOKEN` ก็ยังว่างเหมือนกัน — รอ user เตรียมทั้งสอง env var นี้ก่อนค่อยทำต่อ
+- ทดสอบ flow เต็ม (เพิ่มของ→ตะกร้า→checkout→สร้างออเดอร์→ดูใน admin) ผ่าน dev server แล้ว, ลบ order/customer ทดสอบออกจาก DB จริงหลังตรวจสอบเสร็จ
 
-ต้องสร้าง:
-- Cart แบบ client-side (`localStorage`, key เช่น `sabaipanich-cart`) — component `useCart()` hook เก็บ `{ productId, salePageItemId?, name, price, qty }[]`
-- `src/app/p/[slug]/checkout/page.tsx` — ฟอร์ม (ชื่อ, เบอร์, ที่อยู่, LINE ถ้ามี, หมายเหตุ) + สรุปตะกร้า
-- `src/app/api/orders/route.ts` (POST, public) — รับข้อมูล checkout, สร้าง/find `Customer` ด้วยเบอร์โทร, สร้าง `Order` (orderNo generate เช่น `SP{YYYYMMDD}{running}`) + `OrderItem` (snapshot name/price ณ ตอนนั้น), สร้าง PromptPay QR ด้วย `promptpay-qr`+`qrcode` (**copy pattern ตรงจาก** [E:\project\GearGao-SaaS\src\app\api\pos\qr\route.ts](../GearGao-SaaS/src/app/api/pos/qr/route.ts) แต่ใช้ `AppSettings.promptPayId` หรือ `process.env.PROMPTPAY_ID` ของระบบนี้เอง), เก็บ QR data URL ไว้ที่ `Order.promptPayQr`
-- `src/app/order/[orderNo]/page.tsx` — หน้ายืนยันออเดอร์ (public, เข้าถึงด้วย orderNo) แสดง QR + สรุปยอด + ปุ่มอัปโหลดสลิป
-- `src/app/api/orders/[orderNo]/slip/route.ts` (POST) — อัปโหลดสลิปผ่าน `@vercel/blob`, เซ็ต `Order.slipUrl`
-- ตัด/เช็คสต็อกตอนสั่งซื้อ: **ไม่ต้องตัดสต็อกจริง** (สต็อกอยู่ฝั่ง GearGao) แค่เช็คว่า `SyncedProduct.availableQty >= qty` ตอนสร้างออเดอร์ (soft check, อาจ over-sell ได้เล็กน้อยถ้า sync ไม่ทัน — ยอมรับความเสี่ยงนี้เพราะเป็น cache)
+### ✅ Phase 5 — Admin Order Dashboard (เสร็จแบบย่อ, 2026-07-05)
+- `src/app/admin/orders/page.tsx` — list ทุกออเดอร์ (ล่าสุดก่อน), แสดงลูกค้า/จำนวนรายการ/ยอดรวม/สถานะ
+- `src/app/admin/orders/[id]/page.tsx` + `StatusButtons.tsx` (client) — รายละเอียดออเดอร์เต็ม + ปุ่มเปลี่ยนสถานะ (`PENDING_PAYMENT`/`PAID`/`SHIPPED`/`CANCELLED`)
+- `src/app/api/admin/orders/[id]/route.ts` (PATCH) — อัปเดต status, เช็ค `auth()`
+- เพิ่มลิงก์ "ออเดอร์ลูกค้า" ใน sidebar (`src/app/admin/layout.tsx`)
+- **ยังไม่ได้ทำ:** filter by status ในหน้า list (ทำ list ธรรมดาไปก่อนเพราะยังมีออเดอร์น้อย)
 
-### ⬜ Phase 5 — Admin Order Dashboard
-- `src/app/admin/orders/page.tsx` — list + filter by `status`
-- `src/app/admin/orders/[id]/page.tsx` — รายละเอียดออเดอร์, ดูสลิป, ปุ่มเปลี่ยนสถานะ (`PENDING_PAYMENT → PAID → SHIPPED` หรือ `CANCELLED`)
-- `src/app/api/admin/orders/[id]/route.ts` (PATCH) — อัปเดต status
+### 🐛 บั๊กที่พบและแก้แล้ว: `src/proxy.ts` เช็คชื่อ cookie ผิด (2026-07-05)
+`src/proxy.ts` เช็ค cookie ชื่อ `next-auth.session-token` / `__Secure-next-auth.session-token` (ชื่อของ **NextAuth v4**) แต่โปรเจกต์นี้ใช้ **NextAuth v5 (Auth.js)** ซึ่ง set cookie ชื่อ `authjs.session-token` / `__Secure-authjs.session-token` แทน (ยืนยันจาก `node_modules/@auth/core/lib/utils/cookie.js`)
+
+**ผลกระทบ:** ทุกครั้งที่ login สำเร็จแล้วพยายามเข้า `/admin/*` — `proxy.ts` มองไม่เห็น session cookie (เช็คชื่อผิด) เลย redirect กลับ `/login` เสมอ **ทั้งที่ login จริงสำเร็จ** (ยืนยันด้วย `fetch('/api/auth/session')` คืนค่า user ปกติ) แปลว่าโดยพฤตินัยแล้ว **เข้าหน้า admin ผ่าน browser ไม่ได้เลยตั้งแต่มีฟีเจอร์นี้** จนกว่าจะแก้
+**แก้แล้ว:** เปลี่ยนเป็นเช็ค `authjs.session-token` / `__Secure-authjs.session-token` ที่บรรทัด 10-12 ของ `src/proxy.ts` — ทดสอบแล้วว่า login → เข้า `/admin/orders` ได้ปกติหลังแก้
+**Note:** รหัสผ่าน admin เดิม (`admin@sabaipanich.com`) ไม่มีใครทราบ ระหว่างทดสอบได้รีเซ็ตด้วย `scripts/seed-admin.ts` เป็นรหัสผ่านชั่วคราว — **ต้องแจ้ง/เปลี่ยนรหัสผ่านจริงกับเจ้าของร้านอีกที**
 
 ### ⬜ Phase 6 — Facebook Graph API Auto-post
 **ต้องรอ user เตรียม:** Facebook App (Business type) + Page Access Token ที่มี permission `pages_manage_posts`, `pages_read_engagement` (สร้างเองผ่าน Facebook Developers, ไม่ต้อง App Review ถ้า user เป็น admin ของเพจตัวเองและ app อยู่ใน Development mode)

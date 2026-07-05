@@ -8,8 +8,8 @@ export default async function proxy(req: NextRequest) {
   }
 
   const session =
-    req.cookies.get("next-auth.session-token") ??
-    req.cookies.get("__Secure-next-auth.session-token");
+    req.cookies.get("authjs.session-token") ??
+    req.cookies.get("__Secure-authjs.session-token");
 
   if (!session) {
     return NextResponse.redirect(new URL("/login", req.url));

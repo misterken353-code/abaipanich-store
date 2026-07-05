@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { cartCount, cartTotal, getCart, saveCart, type CartItem } from "@/lib/cart";
 
 export interface StorefrontProduct {
   id: string;
@@ -21,6 +23,32 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
   const [activeTab, setActiveTab] = useState<TabType>("instock");
+  const [cart, setCart] = useState<CartItem[]>([]);
+
+  useEffect(() => {
+    setCart(getCart());
+  }, []);
+
+  function addToCart(product: StorefrontProduct) {
+    setCart((prev) => {
+      const existing = prev.find((i) => i.productId === product.id);
+      const next = existing
+        ? prev.map((i) => (i.productId === product.id ? { ...i, qty: i.qty + 1 } : i))
+        : [
+            ...prev,
+            {
+              productId: product.id,
+              code: product.code,
+              name: product.name,
+              price: product.salePrice,
+              imageUrl: product.image1Url || product.image2Url,
+              qty: 1,
+            },
+          ];
+      saveCart(next);
+      return next;
+    });
+  }
 
   const inStock = useMemo(() => items.filter((p) => !p.isPreOrder), [items]);
   const preOrder = useMemo(() => items.filter((p) => p.isPreOrder), [items]);
@@ -178,7 +206,12 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {filtered.map((product) => (
-              <ProductCard key={product.id} product={product} isPreOrder={activeTab === "preorder"} />
+              <ProductCard
+                key={product.id}
+                product={product}
+                isPreOrder={activeTab === "preorder"}
+                onAddToCart={addToCart}
+              />
             ))}
           </div>
         )}
@@ -191,6 +224,21 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
           Pre-order รับสินค้าภายใน 3–5 วันทำการ
         </p>
       </footer>
+
+      {/* ===== FLOATING CART BAR ===== */}
+      {cart.length > 0 && (
+        <Link
+          href="/cart"
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-emerald-700 text-white rounded-full shadow-xl px-5 py-3 hover:bg-emerald-800 transition-colors"
+        >
+          <span className="text-xl">🛒</span>
+          <span className="font-bold text-sm">{cartCount(cart)} รายการ</span>
+          <span className="w-px h-4 bg-emerald-400" />
+          <span className="font-extrabold text-sm">
+            ฿{cartTotal(cart).toLocaleString("th-TH")}
+          </span>
+        </Link>
+      )}
     </div>
   );
 }
@@ -198,9 +246,11 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
 function ProductCard({
   product,
   isPreOrder,
+  onAddToCart,
 }: {
   product: StorefrontProduct;
   isPreOrder: boolean;
+  onAddToCart: (product: StorefrontProduct) => void;
 }) {
   const imgSrc = product.image1Url || product.image2Url;
 
@@ -274,6 +324,15 @@ function ProductCard({
           </div>
           {stockBadge}
         </div>
+
+        <button
+          onClick={() => onAddToCart(product)}
+          className={`mt-3 w-full rounded-full py-1.5 text-xs font-bold text-white transition-colors ${
+            isPreOrder ? "bg-amber-500 hover:bg-amber-600" : "bg-emerald-700 hover:bg-emerald-800"
+          }`}
+        >
+          + ใส่ตะกร้า
+        </button>
       </div>
     </div>
   );
