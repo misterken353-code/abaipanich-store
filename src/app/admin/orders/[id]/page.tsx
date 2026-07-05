@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import StatusButtons from "./StatusButtons";
 import AcknowledgeButton from "./AcknowledgeButton";
+import AssignRiderButton from "./AssignRiderButton";
 import DoneButton from "./DoneButton";
 
 const SHIPPING_LABEL: Record<string, string> = {
@@ -22,10 +23,13 @@ export default async function AdminOrderDetailPage({
 }) {
   const { id } = await params;
 
-  const order = await prisma.order.findUnique({
-    where: { id },
-    include: { items: true, customer: true },
-  });
+  const [order, riders] = await Promise.all([
+    prisma.order.findUnique({
+      where: { id },
+      include: { items: true, customer: true, rider: true },
+    }),
+    prisma.rider.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
+  ]);
 
   if (!order) notFound();
 
@@ -86,6 +90,19 @@ export default async function AdminOrderDetailPage({
             📍 เปิดตำแหน่งลูกค้าใน Google Maps
           </a>
         )}
+      </div>
+
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5">
+        <h2 className="mb-3 font-semibold text-gray-700">มอบหมายคนขับ</h2>
+        {order.rider && (
+          <p className="mb-3 text-sm text-gray-600">
+            มอบหมายให้: <span className="font-semibold">{order.rider.name}</span> ({order.rider.phone})
+            {order.assignedAt && (
+              <span className="text-gray-400"> — {order.assignedAt.toLocaleString("th-TH")}</span>
+            )}
+          </p>
+        )}
+        <AssignRiderButton orderId={order.id} riders={riders} currentRiderId={order.riderId} />
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm text-gray-600">

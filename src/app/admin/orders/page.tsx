@@ -28,7 +28,7 @@ const PAYMENT_LABEL: Record<string, string> = {
 
 export default async function AdminOrdersPage() {
   const orders = await prisma.order.findMany({
-    include: { customer: true, items: true },
+    include: { customer: true, items: true, rider: true },
     orderBy: { createdAt: "desc" },
     take: 200,
   });
@@ -46,6 +46,7 @@ export default async function AdminOrdersPage() {
               <th className="px-4 py-2">ลูกค้า</th>
               <th className="px-4 py-2">รายการ</th>
               <th className="px-4 py-2">จัดส่ง</th>
+              <th className="px-4 py-2">คนขับ</th>
               <th className="px-4 py-2">ชำระเงิน</th>
               <th className="px-4 py-2">ยอดรวม</th>
               <th className="px-4 py-2">สถานะ</th>
@@ -75,6 +76,7 @@ export default async function AdminOrdersPage() {
                 </td>
                 <td className="px-4 py-2 text-gray-500">{o.items.length} รายการ</td>
                 <td className="px-4 py-2 text-gray-500">{SHIPPING_LABEL[o.shippingMethod] ?? o.shippingMethod}</td>
+                <td className="px-4 py-2 text-gray-500">{o.rider ? o.rider.name : <span className="text-gray-300">—</span>}</td>
                 <td className="px-4 py-2 text-gray-500">{PAYMENT_LABEL[o.paymentMethod] ?? o.paymentMethod}</td>
                 <td className="px-4 py-2 font-semibold">
                   {Number(o.totalAmount).toLocaleString("th-TH")}
@@ -91,7 +93,7 @@ export default async function AdminOrdersPage() {
             ))}
             {orders.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={10} className="px-4 py-8 text-center text-gray-400">
                   ยังไม่มีออเดอร์
                 </td>
               </tr>

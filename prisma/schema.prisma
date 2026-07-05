@@ -135,11 +135,29 @@ model Order {
   promptPayQr     String?        @db.Text
   slipUrl         String?
   acknowledgedAt  DateTime?
+  riderId         String?
+  rider           Rider?         @relation(fields: [riderId], references: [id])
+  assignedAt      DateTime?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
   items          OrderItem[]
   lineMessageLogs LineMessageLog[]
+}
+
+// ============================================================
+// คนขับม้าเร็ว (ทำเนียบคนขับ — มอบหมายงานส่งด้วยมือ, แจ้งงานผ่าน LINE push)
+// ============================================================
+
+model Rider {
+  id         String   @id @default(cuid())
+  name       String
+  phone      String
+  lineUserId String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  orders Order[]
 }
 
 model OrderItem {
