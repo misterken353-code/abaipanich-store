@@ -106,20 +106,30 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum ShippingMethod {
+  PICKUP      // รับเองหน้าร้าน
+  MOTORCYCLE  // เรียกม้าเร็วจัดส่ง — ค่าส่งจ่ายแยกให้คนขับ ไม่รวมใน totalAmount/QR
+  FREIGHT     // จัดส่งทางขนส่ง — ค่าส่งจ่ายปลายทาง ไม่รวมใน totalAmount/QR
+}
+
 model Order {
-  id            String      @id @default(cuid())
-  orderNo       String      @unique
-  customerId    String
-  customer      Customer    @relation(fields: [customerId], references: [id])
-  salePageId    String?
-  salePage      SalePage?   @relation(fields: [salePageId], references: [id])
-  status        OrderStatus @default(PENDING_PAYMENT)
-  totalAmount   Decimal
-  note          String?
-  promptPayQr   String?     @db.Text
-  slipUrl       String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id              String         @id @default(cuid())
+  orderNo         String         @unique
+  customerId      String
+  customer        Customer       @relation(fields: [customerId], references: [id])
+  salePageId      String?
+  salePage        SalePage?      @relation(fields: [salePageId], references: [id])
+  status          OrderStatus    @default(PENDING_PAYMENT)
+  totalAmount     Decimal
+  shippingMethod  ShippingMethod @default(PICKUP)
+  shippingAddress String?
+  customerLat     Float?
+  customerLng     Float?
+  note            String?
+  promptPayQr     String?        @db.Text
+  slipUrl         String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   items          OrderItem[]
   lineMessageLogs LineMessageLog[]

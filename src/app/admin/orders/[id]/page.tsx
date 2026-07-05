@@ -2,6 +2,12 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import StatusButtons from "./StatusButtons";
 
+const SHIPPING_LABEL: Record<string, string> = {
+  PICKUP: "รับเองหน้าร้าน",
+  MOTORCYCLE: "เรียกม้าเร็วจัดส่ง",
+  FREIGHT: "จัดส่งทางขนส่ง",
+};
+
 export default async function AdminOrderDetailPage({
   params,
 }: {
@@ -53,11 +59,26 @@ export default async function AdminOrderDetailPage({
         </div>
       </div>
 
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5 text-sm text-gray-600">
+        <h2 className="mb-2 font-semibold text-gray-700">การจัดส่ง</h2>
+        <p>วิธีจัดส่ง: {SHIPPING_LABEL[order.shippingMethod] ?? order.shippingMethod}</p>
+        {order.shippingAddress && <p>ที่อยู่: {order.shippingAddress}</p>}
+        {order.customerLat != null && order.customerLng != null && (
+          <a
+            href={`https://www.google.com/maps?q=${order.customerLat},${order.customerLng}`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-1 inline-block text-green-700 underline"
+          >
+            📍 เปิดตำแหน่งลูกค้าใน Google Maps
+          </a>
+        )}
+      </div>
+
       <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm text-gray-600">
         <h2 className="mb-2 font-semibold text-gray-700">ข้อมูลลูกค้า</h2>
         <p>ชื่อ: {order.customer.name}</p>
         <p>เบอร์โทร: {order.customer.phone}</p>
-        {order.customer.address && <p>ที่อยู่: {order.customer.address}</p>}
         {order.customer.lineUserId && <p>LINE: {order.customer.lineUserId}</p>}
         {order.note && <p>หมายเหตุ: {order.note}</p>}
         {order.slipUrl && (

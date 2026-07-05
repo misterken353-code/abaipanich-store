@@ -5,6 +5,18 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cartTotal, getCart, saveCart, type CartItem } from "@/lib/cart";
 
+type ShippingMethod = "PICKUP" | "MOTORCYCLE" | "FREIGHT";
+
+const SHIPPING_OPTIONS: { value: ShippingMethod; label: string; desc: string }[] = [
+  { value: "PICKUP", label: "รับเองหน้าร้าน", desc: "ไม่มีค่าจัดส่ง" },
+  {
+    value: "MOTORCYCLE",
+    label: "เรียกม้าเร็วจัดส่ง",
+    desc: "เริ่มต้น 15 บาท (กม. แรก) กม. ที่ 2 ขึ้นไป กม. ละ 5 บาท",
+  },
+  { value: "FREIGHT", label: "จัดส่งทางขนส่ง", desc: "ชำระค่าส่งปลายทางกับบริษัทขนส่ง" },
+];
+
 export default function CheckoutPage() {
   const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -14,6 +26,10 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState("");
   const [lineUserId, setLineUserId] = useState("");
   const [note, setNote] = useState("");
+  const [shippingMethod, setShippingMethod] = useState<ShippingMethod>("PICKUP");
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,6 +37,31 @@ export default function CheckoutPage() {
     setCart(getCart());
     setLoaded(true);
   }, []);
+
+  useEffect(() => {
+    setLocation(null);
+    setLocationError(null);
+  }, [shippingMethod]);
+
+  function shareLocation() {
+    if (!navigator.geolocation) {
+      setLocationError("อุปกรณ์นี้ไม่รองรับการแชร์โลเคชั่น");
+      return;
+    }
+    setLocating(true);
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocating(false);
+      },
+      () => {
+        setLocationError("แชร์โลเคชั่นไม่สำเร็จ กรุณาอนุญาตการเข้าถึงตำแหน่ง");
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,6 +75,14 @@ export default function CheckoutPage() {
       setError("ตะกร้าว่างเปล่า");
       return;
     }
+    if (shippingMethod !== "PICKUP" && !address.trim()) {
+      setError("กรุณากรอกที่อยู่จัดส่ง");
+      return;
+    }
+    if (shippingMethod === "MOTORCYCLE" && !location) {
+      setError("กรุณากดแชร์โลเคชั่นสำหรับให้คนขับม้าเร็วมารับ-ส่ง");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -43,6 +92,9 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           customer: { name: name.trim(), phone: phone.trim(), address: address.trim() || null, lineUserId: lineUserId.trim() || null },
           note: note.trim() || null,
+          shippingMethod,
+          customerLat: location?.lat ?? null,
+          customerLng: location?.lng ?? null,
           items: cart.map((i) => ({ productId: i.productId, qty: i.qty })),
         }),
       });
@@ -111,15 +163,67 @@ export default function CheckoutPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">ที่อยู่จัดส่ง</label>
-            <textarea
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              rows={3}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
-              placeholder="ที่อยู่สำหรับจัดส่งสินค้า"
-            />
+            <label className="block text-sm font-semibold text-gray-700 mb-2">วิธีจัดส่ง *</label>
+            <div className="space-y-2">
+              {SHIPPING_OPTIONS.map((opt) => (
+                <label
+                  key={opt.value}
+                  className={`flex items-start gap-3 border rounded-xl px-4 py-3 cursor-pointer transition-colors ${
+                    shippingMethod === opt.value
+                      ? "border-emerald-500 bg-emerald-50"
+                      : "border-gray-200 hover:border-emerald-300"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="shippingMethod"
+                    checked={shippingMethod === opt.value}
+                    onChange={() => setShippingMethod(opt.value)}
+                    className="mt-1 accent-emerald-700"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">{opt.label}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{opt.desc}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {shippingMethod === "MOTORCYCLE" && (
+              <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <p className="text-xs text-amber-700 font-semibold">
+                  ⚠️ ค่าส่งม้าเร็วเป็นค่าใช้จ่ายเพิ่มเติม ไม่รวมอยู่ในยอดชำระค่าสินค้า — ชำระค่าส่งให้คนขับโดยตรง
+                </p>
+                <button
+                  type="button"
+                  onClick={shareLocation}
+                  disabled={locating}
+                  className="mt-3 w-full bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold py-2 rounded-full disabled:opacity-50"
+                >
+                  {locating ? "กำลังขอตำแหน่ง..." : location ? "📍 แชร์โลเคชั่นแล้ว ✓" : "📍 แชร์โลเคชั่น"}
+                </button>
+                {location && (
+                  <p className="text-xs text-emerald-700 mt-2">
+                    ได้รับตำแหน่งของคุณแล้ว ({location.lat.toFixed(5)}, {location.lng.toFixed(5)})
+                  </p>
+                )}
+                {locationError && <p className="text-xs text-red-600 mt-2">{locationError}</p>}
+              </div>
+            )}
           </div>
+
+          {shippingMethod !== "PICKUP" && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">ที่อยู่จัดส่ง *</label>
+              <textarea
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                rows={3}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                placeholder="ที่อยู่สำหรับจัดส่งสินค้า"
+              />
+            </div>
+          )}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">LINE ID (ถ้ามี)</label>
             <input

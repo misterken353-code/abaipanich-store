@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ShippingMethod } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import generatePayload from "promptpay-qr";
 import QRCode from "qrcode";
@@ -15,13 +16,18 @@ interface CustomerInput {
   lineUserId: string | null;
 }
 
+const VALID_SHIPPING_METHODS: string[] = Object.values(ShippingMethod);
+
 // POST /api/orders — public, สร้างออเดอร์จากตะกร้าลูกค้า
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
-  const { customer, items, note } = body as {
+  const { customer, items, note, shippingMethod, customerLat, customerLng } = body as {
     customer?: CustomerInput;
     items?: OrderItemInput[];
     note?: string | null;
+    shippingMethod?: string;
+    customerLat?: number | null;
+    customerLng?: number | null;
   };
 
   if (!customer?.name?.trim() || !customer?.phone?.trim()) {
@@ -29,6 +35,9 @@ export async function POST(req: NextRequest) {
   }
   if (!items || items.length === 0) {
     return NextResponse.json({ error: "ตะกร้าว่างเปล่า" }, { status: 400 });
+  }
+  if (!shippingMethod || !VALID_SHIPPING_METHODS.includes(shippingMethod)) {
+    return NextResponse.json({ error: "กรุณาเลือกวิธีจัดส่ง" }, { status: 400 });
   }
 
   const products = await prisma.syncedProduct.findMany({
@@ -80,6 +89,10 @@ export async function POST(req: NextRequest) {
           orderNo,
           customerId: customerRecord.id,
           totalAmount,
+          shippingMethod: shippingMethod as ShippingMethod,
+          shippingAddress: customer.address,
+          customerLat: customerLat ?? null,
+          customerLng: customerLng ?? null,
           note: note ?? null,
           items: {
             create: items.map((item) => {

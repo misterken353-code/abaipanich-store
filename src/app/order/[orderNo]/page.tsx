@@ -9,6 +9,18 @@ const STATUS_LABEL: Record<string, string> = {
   CANCELLED: "ยกเลิก",
 };
 
+const SHIPPING_LABEL: Record<string, string> = {
+  PICKUP: "รับเองหน้าร้าน",
+  MOTORCYCLE: "เรียกม้าเร็วจัดส่ง",
+  FREIGHT: "จัดส่งทางขนส่ง",
+};
+
+const SHIPPING_NOTE: Record<string, string> = {
+  PICKUP: "ไม่มีค่าจัดส่ง",
+  MOTORCYCLE: "ค่าส่งม้าเร็ว (เริ่มต้น 15 บาท กม.แรก, กม.ที่ 2 ขึ้นไป กม.ละ 5 บาท) ไม่รวมในยอดนี้ — ชำระให้คนขับโดยตรง",
+  FREIGHT: "ชำระค่าส่งปลายทางกับบริษัทขนส่ง",
+};
+
 export default async function OrderConfirmationPage({
   params,
 }: {
@@ -86,10 +98,26 @@ export default async function OrderConfirmationPage({
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 p-5 text-sm text-gray-600 space-y-1">
+          <p className="font-semibold text-gray-800 mb-2">การจัดส่ง</p>
+          <p>วิธีจัดส่ง: {SHIPPING_LABEL[order.shippingMethod] ?? order.shippingMethod}</p>
+          <p className="text-xs text-gray-400">{SHIPPING_NOTE[order.shippingMethod]}</p>
+          {order.customerLat != null && order.customerLng != null && (
+            <a
+              href={`https://www.google.com/maps?q=${order.customerLat},${order.customerLng}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block mt-1 text-emerald-700 underline text-xs font-semibold"
+            >
+              📍 ดูตำแหน่งที่แชร์ไว้
+            </a>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 text-sm text-gray-600 space-y-1">
           <p className="font-semibold text-gray-800 mb-2">ข้อมูลผู้สั่งซื้อ</p>
           <p>ชื่อ: {order.customer.name}</p>
           <p>เบอร์โทร: {order.customer.phone}</p>
-          {order.customer.address && <p>ที่อยู่: {order.customer.address}</p>}
+          {order.shippingAddress && <p>ที่อยู่: {order.shippingAddress}</p>}
           {order.note && <p>หมายเหตุ: {order.note}</p>}
         </div>
 
