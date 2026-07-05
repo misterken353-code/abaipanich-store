@@ -208,6 +208,11 @@ GEARGAO_ORG_SLUG=สบายพาณิชย์
 
 **✅ อัปเดต (2026-07-05 เย็น):** user กรอก Channel Secret/Access Token ใน `/admin/settings` แล้วจริง (ยืนยันด้วยการยิง HMAC signature จริงเข้า webhook production — ผ่าน, log เข้า DB ถูกต้อง) — เหลือแค่ตั้ง Webhook URL ในหน้า LINE Console (ข้อ 6) และหา/บันทึก Shop User ID (ข้อ 8-9)
 
+**✅ อัปเดต (2026-07-05 ค่ำ) — ตั้ง Webhook URL ผ่าน API สำเร็จแล้ว แต่เปิด "Use webhook" ผ่าน API ไม่ได้:**
+- `scripts/set-webhook.ts` — เรียก `PUT https://api.line.me/v2/bot/channel/webhook/endpoint` ตั้ง endpoint เป็น `https://abaipanich-store.vercel.app/api/line/webhook` สำเร็จ (200), และเรียก `POST .../webhook/test` ยืนยันว่า LINE ยิงเข้ามาที่ endpoint นี้ได้จริง (`success:true, statusCode:200`) — ครั้งแรก timeout เพราะ Vercel serverless function cold start (2s+), ยิงซ้ำรอบสองผ่านปกติ
+- **⚠️ ข้อจำกัดที่เจอ:** `GET .../webhook/endpoint` คืนค่า `active:false` ตลอด แม้ test จะผ่านแล้วก็ตาม — นี่คือค่าที่ตรงกับสวิตช์ **"Use webhook"** ในหน้า Console **ซึ่ง LINE ไม่มี public API ให้ set ค่านี้** (เท่าที่ตรวจสอบตอน 2026-07-05 ไม่พบ endpoint สำหรับ toggle นี้โดยตรง) **user ต้องเข้าไปกดเปิดสวิตช์เองในหน้า Console** (แท็บ Messaging API → หัวข้อ Webhook settings → เปิด "Use webhook") เป็นขั้นตอนเดียวที่เหลือทำแทนไม่ได้จริงๆ
+- ขั้นตอนที่เหลือทำแทนไม่ได้เช่นกัน: "ทักบอทเอง 1 ข้อความ" เพื่อเอา userId เพราะต้องใช้บัญชี LINE จริงของเจ้าของร้านที่มีอยู่ในมือถือ ไม่มีทางจำลองจากฝั่ง server ได้
+
 ### Rich Menu (สร้างแล้ว 2026-07-05)
 สร้างและ publish rich menu จริงบน LINE OA ของร้านแล้ว ผ่าน Messaging API โดยตรง (ไม่ผ่านหน้าเว็บ, รันครั้งเดียวจาก script):
 - `scripts/gen-richmenu.ts` — generate ภาพเมนู 2500x843px ด้วย `sharp` (SVG → PNG), ออกแบบ 3 คอลัมน์เท่ากัน: "เลือกซื้อสินค้า" (ไอคอนถุง) / "ตะกร้าของฉัน" (ไอคอนรถเข็น) / "ติดต่อร้าน" (ไอคอนแชท) บนพื้นเขียว emerald ให้ตรงธีมเว็บ — รันด้วย `npx tsx scripts/gen-richmenu.ts` จะได้ `scripts/richmenu.png` (คอมมิตไว้ในโปรเจกต์เป็นตัวอย่าง/แก้ไขต่อได้)
