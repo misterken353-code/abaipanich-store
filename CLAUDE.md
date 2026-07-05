@@ -86,7 +86,7 @@ GEARGAO_ORG_SLUG=สบายพาณิชย์
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob (สลิปโอนเงิน) | ❌ Phase 4 |
 | `PROMPTPAY_ID` | เลข PromptPay รับเงิน | ✅ ตั้งแล้ว (0807673617) ทั้ง local .env และ Vercel production, ทดสอบ generate QR จริงสำเร็จ |
 | `FACEBOOK_PAGE_ID`, `FACEBOOK_PAGE_ACCESS_TOKEN` | Graph API auto-post | ❌ Phase 6 — ต้องสร้าง FB App เอง |
-| `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN` | LINE OA Messaging API | ❌ Phase 7 — ต้องสร้าง LINE Developers channel เอง |
+| `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN` | LINE OA Messaging API | 🔄 โค้ดพร้อมแล้ว, ตั้งค่าได้ที่ `/admin/settings` แทน env var — รอ user สร้าง LINE Channel (ดู Phase 7) |
 
 ## Data Model (Prisma) — schema เขียนไว้ครบแล้ว รอ implement UI/logic
 
@@ -179,17 +179,32 @@ GEARGAO_ORG_SLUG=สบายพาณิชย์
   - หลายภาพ: อัปโหลดแต่ละรูปด้วย `published=false` ไปที่ `/photos` ก่อน เก็บ `id` แต่ละอันมาเป็น `attached_media` แล้วโพสต์รวมที่ `/feed`
   - บันทึกผลลง `FacebookPost` (postId, permalink, status, error)
 
-### ⬜ Phase 7 — LINE OA Messaging API เต็มรูปแบบ
-**ต้องรอ user เตรียม:** LINE Developers Console → สร้าง Provider + Messaging API Channel → เอา Channel Secret + (issue) Channel Access Token (long-lived)
+### 🔄 Phase 7 — LINE OA Messaging API (เริ่มแล้ว 2026-07-05 — รอ user สร้าง LINE Channel เพื่อใช้งานจริง)
 
-ต้องสร้าง:
-- `src/app/api/line/webhook/route.ts` (POST) — verify `x-line-signature` header ด้วย HMAC-SHA256(channel secret, raw body) แล้วเทียบ base64 (pattern HMAC เดียวกับที่ GearGao ใช้ verify webhook ของ MoneySpace — ดูไฟล์ webhook MoneySpace ใน GearGao ถ้าต้องการอ้างอิง วิธี verify HMAC ใน Node)
-  - ตัวอย่างวิธี verify HMAC webhook แบบเดียวกัน (คนละ provider แต่ pattern เหมือนกัน) ดูที่ [GearGao-SaaS/src/app/api/payment/webhook/route.ts](../GearGao-SaaS/src/app/api/payment/webhook/route.ts)
-  - handle event `follow` → บันทึก `lineUserId` (ถ้าจับคู่กับ `Customer` ได้จากบทสนทนา ก็ update `Customer.lineUserId`)
-  - handle event `message` (type text) → log ลง `LineMessageLog` (direction `IN`), ตอบกลับอัตโนมัติเบื้องต้นหรือปล่อยให้แอดมินตอบเองผ่าน push message
-- เมื่อสร้าง `Order` ใหม่ (Phase 4) → เรียก LINE push message API (`POST https://api.line.me/v2/bot/message/push`) แจ้งร้าน (เก็บ `lineUserId` ของแอดมิน/กลุ่มไว้ใน `AppSettings` หรือ env) ว่ามีออเดอร์ใหม่ พร้อมสรุปรายการ+ยอด
-- ถ้าลูกค้ามี `lineUserId` (กรอกตอน checkout หรือมาจาก webhook) → push แจ้งยืนยันออเดอร์ + รูป QR PromptPay ให้ลูกค้าโดยตรงผ่าน LINE ด้วย
-- บันทึกทุกข้อความ (ทั้ง IN/OUT) ลง `LineMessageLog`
+**สิ่งที่เสร็จแล้ว (โค้ดพร้อมใช้ทันทีที่มี credentials):**
+- `src/lib/line.ts` — `getLineConfig()` อ่าน channel secret/access token/shop user id จาก `AppSettings` (DB) ก่อน แล้ว fallback ไป env var (`LINE_CHANNEL_SECRET`/`LINE_CHANNEL_ACCESS_TOKEN`) ถ้า DB ไม่มี, `pushLineMessage(to, text)` ส่งข้อความ + log ลง `LineMessageLog` (direction `OUT`), `notifyShop(text)` ส่งไปยัง `lineShopUserId` ที่ตั้งไว้
+- `src/app/api/line/webhook/route.ts` (POST, public) — verify `x-line-signature` ด้วย HMAC-SHA256(channel secret, raw body) เทียบ base64, ถ้ายังไม่ตั้ง secret จะตอบ `{ok:true}` เฉย ๆ (no-op กัน error), handle `follow`/`message text`/`message location` (แปลง location เป็นลิงก์ Google Maps) → log ทุกอย่างลง `LineMessageLog` (direction `IN`)
+- `src/app/api/orders/route.ts` — หลังสร้างออเดอร์สำเร็จ เรียก `notifyShop(...)` ส่งสรุปออเดอร์ (ลูกค้า/รายการ/ยอด/วิธีจัดส่ง/ลิงก์ Google Maps ถ้ามี/ลิงก์ admin) เข้า LINE ของร้านทันที — **ถ้ายังไม่ตั้งค่า `lineShopUserId` จะ skip เงียบ ๆ ไม่ error**
+- `src/app/admin/settings/page.tsx` + `SettingsForm.tsx` + `src/app/api/admin/settings/route.ts` (GET/PATCH, ต้อง `auth()`) — ฟอร์มกรอก Channel Secret/Access Token/Shop User ID/PromptPay ID, พร้อมตาราง "ข้อความล่าสุดที่ทักบอท" (20 รายการล่าสุดจาก `LineMessageLog` direction IN) ให้เจ้าของร้านหา User ID ของตัวเองได้ง่าย (ทักบอท 1 ข้อความ → เห็น userId ในตารางนี้ → copy ไปใส่ช่อง Shop User ID)
+- Schema: เพิ่ม `AppSettings.lineShopUserId`
+- ทดสอบแล้วด้วย mock signature (`crypto.subtle` ใน browser) ยิงเข้า webhook จริงบน dev server, ยืนยันว่า log เข้า DB และแสดงในหน้า settings ถูกต้อง, ลบข้อมูลทดสอบออกแล้ว
+
+**สิ่งที่ยังไม่ได้ทำ (ตั้งใจไว้ ยังไม่จำเป็นตอนนี้):**
+- Push แจ้งลูกค้าโดยตรง (ต้องมี `lineUserId` ของลูกค้าจาก checkout form ก่อน — ฟิลด์มีอยู่แล้วใน `Customer.lineUserId` แต่ยังไม่ได้ auto-push อะไรกลับหาลูกค้า)
+- Auto-reply ข้อความเข้า (ตอนนี้ webhook แค่ log ไม่ได้ตอบกลับอัตโนมัติ)
+- จับคู่ `lineUserId` จาก webhook เข้ากับ `Customer` ที่มีอยู่แล้วอัตโนมัติ (ตอนนี้ต้องจับคู่เอง)
+
+**ขั้นตอนที่ user ต้องทำเอง (ผมทำแทนไม่ได้ ต้อง login LINE account ของร้านเอง):**
+1. ไปที่ [LINE Developers Console](https://developers.line.biz/console/) → login ด้วยบัญชี LINE เดียวกับที่ผูกกับ LINE OA ของร้าน
+2. สร้าง Provider (ถ้ายังไม่มี) → สร้าง Channel ใหม่ ประเภท **Messaging API** → ผูกกับ LINE Official Account ที่มีอยู่แล้ว (หรือสร้างใหม่ถ้ายังไม่มี)
+3. ในหน้า Channel → แท็บ **Basic settings** → copy **Channel secret**
+4. แท็บ **Messaging API** → กด **Issue** ที่ **Channel access token (long-lived)** → copy token
+5. เอา 2 ค่านี้ไปกรอกที่ `/admin/settings` ของเว็บ (Channel Secret, Channel Access Token) แล้วกดบันทึก
+6. ในหน้า Channel → แท็บ **Messaging API** → ใส่ Webhook URL เป็น `https://abaipanich-store.vercel.app/api/line/webhook` แล้วเปิด **Use webhook**
+7. ปิด auto-reply message เริ่มต้นของ LINE (แท็บ **Messaging API** → **LINE Official Account features** → ปิด "Greeting messages"/"Auto-reply messages" ถ้าไม่ต้องการให้ชนกับระบบ)
+8. เพิ่มบัญชี LINE OA เป็นเพื่อนด้วยมือถือของเจ้าของร้าน แล้วทักข้อความอะไรก็ได้ 1 ครั้ง
+9. กลับไปที่ `/admin/settings` รีเฟรชหน้า → จะเห็น userId ของเจ้าของร้านในตาราง "ข้อความล่าสุด" → copy ไปใส่ช่อง "LINE User ID ของร้าน" แล้วบันทึก
+10. ทดสอบสั่งซื้อ 1 ออเดอร์จากหน้าเว็บ → ควรมีข้อความแจ้งเตือนเข้า LINE ของเจ้าของร้านทันที
 
 ## Pattern ที่ reuse จาก GearGao-SaaS (มีโค้ดตัวอย่างพร้อมใช้)
 
@@ -229,6 +244,6 @@ npx tsc --noEmit            # type-check (next build ตั้ง ignoreBuildErr
 - [ ] URL ที่ GearGao-SaaS deploy จริง — ใส่ `GEARGAO_PUBLIC_API_URL`
 - [x] เลข PromptPay ที่ใช้รับเงิน — ใส่ `PROMPTPAY_ID` = 0807673617 แล้ว (2026-07-05)
 - [ ] Facebook App + Page Access Token — Phase 6
-- [ ] LINE Developers Messaging API Channel (Secret + Access Token) — Phase 7
+- [ ] LINE Developers Messaging API Channel (Secret + Access Token) — Phase 7 (ดูขั้นตอน 10 ข้อในหัวข้อ Phase 7 ด้านบน)
 - [ ] ตัดสินใจว่าจะ deploy โปรเจกต์นี้ที่ไหน (Vercel แนะนำ เพื่อความสอดคล้องกับ GearGao)
 - [ ] `git init` ในโฟลเดอร์นี้ — ยังไม่ได้ทำ ณ ตอนเขียนไฟล์นี้
