@@ -182,6 +182,21 @@ User อยากให้ระบบดึงชื่อจากบัญช
 - **ตั้งใจไม่รวมค่าส่งม้าเร็ว/ขนส่งเข้า `totalAmount` หรือ QR PromptPay** เพราะเป็นค่าใช้จ่ายที่ชำระแยกนอกระบบ (ให้คนขับ/บริษัทขนส่งโดยตรง) ไม่ใช่ยอดที่ร้านเก็บเอง — ถ้าในอนาคตต้องการให้ระบบคำนวณค่าส่งจริงตามระยะทาง จะต้องมีพิกัดร้าน + Google Maps Distance Matrix API (ยังไม่ได้ทำ)
 - ทดสอบผ่าน dev server (mock geolocation + submit จริง) และ tsc/build ผ่านสะอาด
 
+### ✅ หน้าแรกแบบเลือกหมวดหมู่ + Branding เรียบหรู (เสร็จ, 2026-07-05)
+**เป้าหมาย:** หน้าแรกเดิมโชว์สินค้าทั้งหมด 239 รายการรวดเดียว (มีแค่ปุ่ม filter "ทั้งหมด") — user อยากให้ลูกค้าเลือกหมวดหมู่ก่อนถึงเห็นสินค้า และอยากได้ภาพลักษณ์ร้านที่ดูพรีเมียมขึ้น
+
+- `StorefrontClient.tsx` เปลี่ยน state `selectedCategory` จาก default `"ทั้งหมด"` เป็น `null` — ตัดปุ่ม "ทั้งหมด" ออกจากกลุ่ม pill เดิมทั้งหมด (ไม่มี browse-all อีกต่อไป)
+  - `selectedCategory === null && search ว่าง` → แสดง **grid การ์ดหมวดหมู่** (คำนวณจาก `categoryName` ของสินค้าจริงใน tab ปัจจุบัน ผ่าน `useMemo` — ถ้ามีหมวดใหม่เพิ่มเข้ามาจากการ sync ครั้งต่อไปจะโชว์อัตโนมัติทันทีไม่ต้องแก้โค้ด) แต่ละการ์ดโชว์รูปสินค้าตัวแรกที่เจอในหมวดนั้น + จำนวนรายการ, กดแล้วเข้าไปดูสินค้าของหมวดนั้น
+  - เลือกหมวดแล้ว → โชว์ปุ่ม "← กลับไปหมวดหมู่" + grid สินค้าเดิม (component `ProductCard` ไม่เปลี่ยน)
+  - ค้นหา (`search` ไม่ว่าง) → **ข้ามเรื่องหมวดหมู่ทั้งหมด** ค้นหาข้ามทุกหมวดใน tab ปัจจุบันเสมอ (มี "✕ ล้างการค้นหา" แทนปุ่มกลับ)
+  - เปลี่ยน tab (พร้อมส่ง/Pre-order) จะ reset ทั้ง `search` และ `selectedCategory` กลับเป็นค่าเริ่มต้นเสมอ (แสดงหมวดหมู่ใหม่ของ tab นั้น)
+- **Branding:** สร้าง `public/logo.png` (512x512, วงกลมพื้นเขียวเข้ม-ทอง ตัวอักษร "ส" ฟอนต์ Angsana New) และ `public/banner.png` (1600x500, กรอบเส้นทองมุม+เส้นคู่ กรอบชื่อร้าน "สบายพาณิชย์" + tagline) ด้วย `scripts/gen-brand.ts` (SVG → PNG ผ่าน `sharp`, ทดสอบแล้วว่า Angsana New render ภาษาไทยสวยและถูกต้อง)
+  - `src/app/icon.png` (256x256, ใช้ logo เดียวกัน) — Next.js App Router **auto-detect ไฟล์ชื่อนี้เป็น favicon เอง** ไม่ต้องแก้ `metadata` ใน `layout.tsx`
+  - `StorefrontClient.tsx` เปลี่ยน header จากแท่งสีเขียวเรียบเป็น `<img src="/banner.png">` เต็มความกว้าง (h-28 มือถือ / h-36 จอใหญ่, object-cover)
+  - ยืนยันแล้วว่า asset ทั้งหมด deploy ขึ้น production จริง (`banner.png`/`logo.png`/`icon.png` ตอบ 200)
+- **⚠️ โลโก้ LINE OA ยังไม่ได้ใส่ให้ — ไม่มี public API:** ตรวจสอบแล้วไม่พบ endpoint ใน LINE Messaging API สำหรับตั้งรูปโปรไฟล์ของ Official Account (ต่างจาก rich menu ที่มี endpoint อัปโหลดตรงๆ) — ต้องอัปโหลดเองผ่าน **LINE Official Account Manager → ตั้งค่า (Settings) → ตั้งค่าบัญชี (Account settings) → รูปโปรไฟล์** โดยดาวน์โหลดโลโก้จาก `https://abaipanich-store.vercel.app/logo.png` แล้วอัปโหลดเอง
+- ทดสอบ flow เลือกหมวดหมู่/ย้อนกลับ/ค้นหา ผ่าน dev server ครบ (คลิกเข้าหมวด "เครื่องดื่ม" เห็น 194 รายการ, กดย้อนกลับเห็น grid หมวดหมู่ปกติ, ค้นหา "ปลากระป๋อง" ข้ามหมวดได้ผลลัพธ์ถูกต้อง), tsc/build ผ่านสะอาด
+
 ### ✅ Phase 5 — Admin Order Dashboard (เสร็จแบบย่อ, 2026-07-05)
 - `src/app/admin/orders/page.tsx` — list ทุกออเดอร์ (ล่าสุดก่อน), แสดงลูกค้า/จำนวนรายการ/ยอดรวม/สถานะ
 - `src/app/admin/orders/[id]/page.tsx` + `StatusButtons.tsx` (client) — รายละเอียดออเดอร์เต็ม + ปุ่มเปลี่ยนสถานะ (`PENDING_PAYMENT`/`PAID`/`SHIPPED`/`CANCELLED`)
