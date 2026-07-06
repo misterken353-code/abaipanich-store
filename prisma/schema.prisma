@@ -146,16 +146,17 @@ model Order {
 }
 
 // ============================================================
-// คนขับม้าเร็ว (ทำเนียบคนขับ — มอบหมายงานส่งด้วยมือ, แจ้งงานผ่าน LINE push)
+// คนขับม้าเร็ว (ทำเนียบคนขับ — คนขับกดรับงานเองผ่านลิงก์เฉพาะตัว, แจ้งงานผ่าน LINE push)
 // ============================================================
 
 model Rider {
-  id         String   @id @default(cuid())
-  name       String
-  phone      String
-  lineUserId String?
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
+  id          String   @id @default(cuid())
+  name        String
+  phone       String
+  lineUserId  String?
+  accessToken String   @unique @default(cuid())
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
 
   orders Order[]
 }

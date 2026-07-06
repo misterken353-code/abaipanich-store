@@ -9,6 +9,7 @@ interface Rider {
   phone: string;
   lineUserId: string | null;
   isActive: boolean;
+  accessToken: string;
 }
 
 export default function RidersManager({ riders }: { riders: Rider[] }) {
@@ -18,6 +19,7 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
   const [lineUserId, setLineUserId] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -62,6 +64,14 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
     if (!confirm(`ลบคนขับ "${rider.name}" ออกจากทำเนียบ?`)) return;
     await fetch(`/api/admin/riders/${rider.id}`, { method: "DELETE" });
     router.refresh();
+  }
+
+  function copyLink(rider: Rider) {
+    const url = `${window.location.origin}/rider/${rider.accessToken}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(rider.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
   }
 
   return (
@@ -116,6 +126,7 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
               <th className="px-4 py-2">ชื่อ</th>
               <th className="px-4 py-2">เบอร์โทร</th>
               <th className="px-4 py-2">LINE</th>
+              <th className="px-4 py-2">ลิงก์รับงาน</th>
               <th className="px-4 py-2">สถานะ</th>
               <th className="px-4 py-2"></th>
             </tr>
@@ -127,6 +138,14 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
                 <td className="px-4 py-2 text-gray-500">{r.phone}</td>
                 <td className="px-4 py-2 text-gray-500">
                   {r.lineUserId ? "✓ ผูกแล้ว" : <span className="text-gray-300">ยังไม่ผูก</span>}
+                </td>
+                <td className="px-4 py-2">
+                  <button
+                    onClick={() => copyLink(r)}
+                    className="text-xs font-semibold text-green-700 hover:underline"
+                  >
+                    {copiedId === r.id ? "คัดลอกแล้ว ✓" : "คัดลอกลิงก์"}
+                  </button>
                 </td>
                 <td className="px-4 py-2">
                   <button
@@ -147,7 +166,7 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
             ))}
             {riders.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
                   ยังไม่มีคนขับในระบบ
                 </td>
               </tr>

@@ -93,7 +93,11 @@ export default async function AdminOrderDetailPage({
       </div>
 
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5">
-        <h2 className="mb-3 font-semibold text-gray-700">มอบหมายคนขับ</h2>
+        <h2 className="mb-3 font-semibold text-gray-700">คนขับ</h2>
+        <p className="mb-3 text-xs text-gray-400">
+          ปกติคนขับจะกดรับงานเอง (ถ้า &quot;วิธีจัดส่ง&quot; เป็นม้าเร็ว และกด &quot;รับออเดอร์&quot; ด้านบนแล้ว) —
+          ใช้ตรงนี้เพื่อมอบหมายเอง/เปลี่ยนคนขับกรณีจำเป็น
+        </p>
         {order.rider && (
           <p className="mb-3 text-sm text-gray-600">
             มอบหมายให้: <span className="font-semibold">{order.rider.name}</span> ({order.rider.phone})

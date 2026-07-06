@@ -13,7 +13,11 @@ export default async function AdminRidersPage() {
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-semibold">คนขับ (ม้าเร็ว)</h1>
+      <h1 className="mb-1 text-xl font-semibold">คนขับ (ม้าเร็ว)</h1>
+      <p className="mb-4 text-sm text-gray-500">
+        เพิ่มคนขับแล้วกด &quot;คัดลอกลิงก์&quot; ส่งลิงก์ให้คนขับทาง LINE — คนขับเปิดลิงก์นั้นแล้วจะเห็นงานส่งที่ว่างอยู่
+        กดรับงานเอง (แข่งกันแบบ Lalamove/Grab) และกดแจ้งจัดส่งสำเร็จได้เองโดยไม่ต้องล็อกอิน
+      </p>
 
       <RidersManager riders={riders} />
 
