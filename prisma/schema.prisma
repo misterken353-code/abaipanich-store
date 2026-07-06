@@ -138,6 +138,11 @@ model Order {
   riderId         String?
   rider           Rider?         @relation(fields: [riderId], references: [id])
   assignedAt      DateTime?
+  riderRating     Int?
+  riderRatingComment String?
+  riderCommission    Decimal?
+  commissionSettled  Boolean    @default(false)
+  settledAt          DateTime?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
@@ -150,13 +155,17 @@ model Order {
 // ============================================================
 
 model Rider {
-  id          String   @id @default(cuid())
-  name        String
-  phone       String
-  lineUserId  String?
-  accessToken String   @unique @default(cuid())
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id                    String   @id @default(cuid())
+  name                  String
+  phone                 String
+  lineUserId            String?
+  accessToken           String   @unique @default(cuid())
+  isActive              Boolean  @default(true)
+  commissionPerDelivery Decimal  @default(0) // ค่าคอมมิชชั่นต่องาน (บาท) — แอดมินตั้งเอง default 0
+  lastLat               Float?
+  lastLng               Float?
+  lastLocationAt        DateTime?
+  createdAt             DateTime @default(now())
 
   orders Order[]
 }

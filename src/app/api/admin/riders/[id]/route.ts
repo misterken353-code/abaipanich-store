@@ -9,11 +9,12 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
   const { id } = await ctx.params;
   const body = await req.json().catch(() => ({}));
-  const { name, phone, lineUserId, isActive } = body as {
+  const { name, phone, lineUserId, isActive, commissionPerDelivery } = body as {
     name?: string;
     phone?: string;
     lineUserId?: string | null;
     isActive?: boolean;
+    commissionPerDelivery?: number;
   };
 
   const rider = await prisma.rider
@@ -24,6 +25,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
         ...(phone !== undefined ? { phone: phone.trim() } : {}),
         ...(lineUserId !== undefined ? { lineUserId: lineUserId?.trim() || null } : {}),
         ...(isActive !== undefined ? { isActive } : {}),
+        ...(commissionPerDelivery !== undefined ? { commissionPerDelivery } : {}),
       },
     })
     .catch(() => null);

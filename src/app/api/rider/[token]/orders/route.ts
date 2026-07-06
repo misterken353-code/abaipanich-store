@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/rider/:token/orders — public (auth ผ่าน token), คืนงานที่ว่างและงานของตัวเอง
+// GET /api/rider/:token/orders — public (auth ผ่าน token), คืนงานที่ว่าง/งานของตัวเอง/ประวัติ/สรุปคะแนน-ค่าคอมมิชชั่น
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: string }> }) {
   const { token } = await ctx.params;
 
@@ -10,7 +10,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: str
     return NextResponse.json({ error: "ไม่พบบัญชีคนขับ หรือถูกปิดใช้งาน" }, { status: 404 });
   }
 
-  const [available, mine] = await Promise.all([
+  const [available, mine, history] = await Promise.all([
     prisma.order.findMany({
       where: { shippingMethod: "MOTORCYCLE", riderId: null, status: { not: "CANCELLED" }, acknowledgedAt: { not: null } },
       include: { customer: true, items: true },
@@ -21,11 +21,23 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: str
       include: { customer: true, items: true },
       orderBy: { assignedAt: "asc" },
     }),
+    prisma.order.findMany({
+      where: { riderId: rider.id, status: "SHIPPED" },
+      orderBy: { updatedAt: "desc" },
+      take: 20,
+    }),
   ]);
 
+  const rated = history.filter((o) => o.riderRating != null);
+  const avgRating = rated.length > 0 ? rated.reduce((s, o) => s + (o.riderRating ?? 0), 0) / rated.length : null;
+  const unsettledCommission = history
+    .filter((o) => !o.commissionSettled)
+    .reduce((s, o) => s + Number(o.riderCommission ?? 0), 0);
+
   return NextResponse.json({
-    rider: { name: rider.name },
+    rider: { name: rider.name, avgRating, ratedCount: rated.length, unsettledCommission },
     available,
     mine,
+    history,
   });
 }

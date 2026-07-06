@@ -16,7 +16,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
 
   const result = await prisma.order.updateMany({
     where: { id: orderId, riderId: rider.id },
-    data: { status: "SHIPPED" },
+    data: { status: "SHIPPED", riderCommission: rider.commissionPerDelivery },
   });
 
   if (result.count === 0) {

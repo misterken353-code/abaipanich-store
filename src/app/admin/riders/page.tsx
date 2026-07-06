@@ -2,14 +2,37 @@ import { prisma } from "@/lib/prisma";
 import RidersManager from "./RidersManager";
 
 export default async function AdminRidersPage() {
-  const [riders, recentMessages] = await Promise.all([
-    prisma.rider.findMany({ orderBy: { createdAt: "desc" } }),
+  const [ridersRaw, recentMessages] = await Promise.all([
+    prisma.rider.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { orders: { where: { status: "SHIPPED" }, select: { riderRating: true, riderCommission: true, commissionSettled: true } } },
+    }),
     prisma.lineMessageLog.findMany({
       where: { direction: "IN" },
       orderBy: { createdAt: "desc" },
       take: 20,
     }),
   ]);
+
+  const riders = ridersRaw.map((r) => {
+    const rated = r.orders.filter((o) => o.riderRating != null);
+    const avgRating = rated.length > 0 ? rated.reduce((s, o) => s + (o.riderRating ?? 0), 0) / rated.length : null;
+    const unsettledCommission = r.orders
+      .filter((o) => !o.commissionSettled)
+      .reduce((s, o) => s + Number(o.riderCommission ?? 0), 0);
+    return {
+      id: r.id,
+      name: r.name,
+      phone: r.phone,
+      lineUserId: r.lineUserId,
+      accessToken: r.accessToken,
+      isActive: r.isActive,
+      commissionPerDelivery: Number(r.commissionPerDelivery),
+      avgRating,
+      ratedCount: rated.length,
+      unsettledCommission,
+    };
+  });
 
   return (
     <div>

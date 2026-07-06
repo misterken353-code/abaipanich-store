@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import RateRiderForm from "./RateRiderForm";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING_PAYMENT: "รอชำระเงิน",
@@ -35,7 +36,7 @@ export default async function OrderConfirmationPage({
 
   const order = await prisma.order.findUnique({
     where: { orderNo },
-    include: { items: true, customer: true },
+    include: { items: true, customer: true, rider: true },
   });
 
   if (!order) notFound();
@@ -137,6 +138,15 @@ export default async function OrderConfirmationPage({
           {order.shippingAddress && <p>ที่อยู่: {order.shippingAddress}</p>}
           {order.note && <p>หมายเหตุ: {order.note}</p>}
         </div>
+
+        {order.status === "SHIPPED" && order.rider && order.riderRating == null && (
+          <RateRiderForm orderNo={order.orderNo} riderName={order.rider.name} />
+        )}
+        {order.riderRating != null && (
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 text-center text-sm text-gray-500">
+            คุณให้คะแนนคนขับไปแล้ว {"⭐".repeat(order.riderRating)}
+          </div>
+        )}
 
         <Link
           href="/"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface OrderItem {
   id: string;
@@ -20,16 +20,36 @@ interface OrderInfo {
   items: OrderItem[];
 }
 
-const SHIPPING_LABEL: Record<string, string> = { PICKUP: "รับเองหน้าร้าน", MOTORCYCLE: "ม้าเร็ว", FREIGHT: "ขนส่ง" };
+interface HistoryOrder {
+  id: string;
+  orderNo: string;
+  totalAmount: string;
+  riderRating: number | null;
+  riderCommission: string | null;
+  commissionSettled: boolean;
+  updatedAt: string;
+}
+
+interface RiderStats {
+  name: string;
+  avgRating: number | null;
+  ratedCount: number;
+  unsettledCommission: number;
+}
+
+const LOCATION_UPDATE_INTERVAL_MS = 60_000;
 
 export default function RiderDashboard({ token }: { token: string }) {
-  const [riderName, setRiderName] = useState<string | null>(null);
+  const [rider, setRider] = useState<RiderStats | null>(null);
   const [available, setAvailable] = useState<OrderInfo[]>([]);
   const [mine, setMine] = useState<OrderInfo[]>([]);
+  const [history, setHistory] = useState<HistoryOrder[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [locationShared, setLocationShared] = useState(false);
+  const lastSentRef = useRef(0);
 
   const load = useCallback(async () => {
     try {
@@ -39,9 +59,10 @@ export default function RiderDashboard({ token }: { token: string }) {
         setError(data.error ?? "โหลดข้อมูลไม่สำเร็จ");
         return;
       }
-      setRiderName(data.rider.name);
+      setRider(data.rider);
       setAvailable(data.available);
       setMine(data.mine);
+      setHistory(data.history);
       setError(null);
     } catch {
       setError("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้");
@@ -55,6 +76,28 @@ export default function RiderDashboard({ token }: { token: string }) {
     const interval = setInterval(load, 15000);
     return () => clearInterval(interval);
   }, [load]);
+
+  // แชร์ตำแหน่งเป็นระยะ ๆ (ใช้จับคู่งานใหม่กับคนขับที่อยู่ใกล้ลูกค้าที่สุด)
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const now = Date.now();
+        if (now - lastSentRef.current < LOCATION_UPDATE_INTERVAL_MS) return;
+        lastSentRef.current = now;
+        fetch(`/api/rider/${token}/location`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        })
+          .then(() => setLocationShared(true))
+          .catch(() => {});
+      },
+      () => setLocationShared(false),
+      { enableHighAccuracy: true }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [token]);
 
   async function claim(orderId: string) {
     setBusyId(orderId);
@@ -99,7 +142,7 @@ export default function RiderDashboard({ token }: { token: string }) {
     }
   }
 
-  if (error && !riderName) {
+  if (error && !rider) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
@@ -114,8 +157,16 @@ export default function RiderDashboard({ token }: { token: string }) {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-emerald-700 text-white shadow-lg sticky top-0 z-10">
         <div className="max-w-lg mx-auto px-4 py-4">
-          <h1 className="text-lg font-bold">🛵 สวัสดี {riderName ?? "..."}</h1>
-          <p className="text-emerald-200 text-xs mt-0.5">สบายพาณิชย์ — งานส่งของ</p>
+          <h1 className="text-lg font-bold">🛵 สวัสดี {rider?.name ?? "..."}</h1>
+          <div className="flex items-center gap-3 mt-1 text-emerald-200 text-xs">
+            <span>
+              {rider?.avgRating != null ? `⭐ ${rider.avgRating.toFixed(1)} (${rider.ratedCount})` : "ยังไม่มีคะแนน"}
+            </span>
+            <span>·</span>
+            <span>ค้างจ่าย ฿{(rider?.unsettledCommission ?? 0).toLocaleString("th-TH")}</span>
+            <span>·</span>
+            <span>{locationShared ? "📍 แชร์ตำแหน่งอยู่" : "📍 ไม่ได้แชร์ตำแหน่ง"}</span>
+          </div>
         </div>
       </header>
 
@@ -149,6 +200,34 @@ export default function RiderDashboard({ token }: { token: string }) {
             <div className="space-y-3">
               {available.map((o) => (
                 <OrderCard key={o.id} order={o} action={{ label: "📦 รับงานนี้", busy: busyId === o.id, onClick: () => claim(o.id) }} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section>
+          <h2 className="font-bold text-gray-700 mb-3">ประวัติงานที่ส่งสำเร็จ ({history.length})</h2>
+          {history.length === 0 ? (
+            <p className="text-sm text-gray-400">ยังไม่มีประวัติ</p>
+          ) : (
+            <div className="bg-white rounded-2xl border border-gray-100 divide-y">
+              {history.map((o) => (
+                <div key={o.id} className="p-3 flex items-center justify-between text-sm">
+                  <div>
+                    <p className="font-semibold text-gray-800">{o.orderNo}</p>
+                    <p className="text-xs text-gray-400">
+                      {new Date(o.updatedAt).toLocaleDateString("th-TH")}
+                      {o.riderRating != null && ` · ${"⭐".repeat(o.riderRating)}`}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-400">ค่าคอมฯ</p>
+                    <p className={`font-bold ${o.commissionSettled ? "text-gray-400" : "text-amber-600"}`}>
+                      ฿{Number(o.riderCommission ?? 0).toLocaleString("th-TH")}
+                      {o.commissionSettled && " ✓"}
+                    </p>
+                  </div>
+                </div>
               ))}
             </div>
           )}

@@ -10,6 +10,10 @@ interface Rider {
   lineUserId: string | null;
   isActive: boolean;
   accessToken: string;
+  commissionPerDelivery: number;
+  avgRating: number | null;
+  ratedCount: number;
+  unsettledCommission: number;
 }
 
 export default function RidersManager({ riders }: { riders: Rider[] }) {
@@ -20,6 +24,8 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [commissionDrafts, setCommissionDrafts] = useState<Record<string, string>>({});
+  const [settlingId, setSettlingId] = useState<string | null>(null);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -74,6 +80,36 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
     });
   }
 
+  async function saveCommission(rider: Rider) {
+    const draft = commissionDrafts[rider.id];
+    if (draft === undefined) return;
+    const value = Number(draft);
+    if (Number.isNaN(value) || value < 0) return;
+    await fetch(`/api/admin/riders/${rider.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ commissionPerDelivery: value }),
+    });
+    setCommissionDrafts((prev) => {
+      const next = { ...prev };
+      delete next[rider.id];
+      return next;
+    });
+    router.refresh();
+  }
+
+  async function settleCommission(rider: Rider) {
+    if (!confirm(`ยืนยันว่าจ่ายค่าคอมมิชชั่นค้างจ่าย ฿${rider.unsettledCommission.toLocaleString("th-TH")} ให้ "${rider.name}" แล้ว?`))
+      return;
+    setSettlingId(rider.id);
+    try {
+      await fetch(`/api/admin/riders/${rider.id}/settle-commission`, { method: "POST" });
+      router.refresh();
+    } finally {
+      setSettlingId(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <form onSubmit={handleAdd} className="max-w-xl space-y-3 rounded-xl border border-gray-200 bg-white p-5">
@@ -119,7 +155,7 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
         </button>
       </form>
 
-      <div className="rounded-xl border border-gray-200 bg-white">
+      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-left text-gray-500">
             <tr>
@@ -127,6 +163,9 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
               <th className="px-4 py-2">เบอร์โทร</th>
               <th className="px-4 py-2">LINE</th>
               <th className="px-4 py-2">ลิงก์รับงาน</th>
+              <th className="px-4 py-2">คะแนน</th>
+              <th className="px-4 py-2">ค่าคอมฯ/งาน</th>
+              <th className="px-4 py-2">ค้างจ่าย</th>
               <th className="px-4 py-2">สถานะ</th>
               <th className="px-4 py-2"></th>
             </tr>
@@ -147,6 +186,44 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
                     {copiedId === r.id ? "คัดลอกแล้ว ✓" : "คัดลอกลิงก์"}
                   </button>
                 </td>
+                <td className="px-4 py-2 text-gray-500">
+                  {r.avgRating != null ? `⭐ ${r.avgRating.toFixed(1)} (${r.ratedCount})` : <span className="text-gray-300">—</span>}
+                </td>
+                <td className="px-4 py-2">
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min={0}
+                      value={commissionDrafts[r.id] ?? r.commissionPerDelivery}
+                      onChange={(e) => setCommissionDrafts((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                      className="w-20 rounded-lg border border-gray-300 px-2 py-1 text-xs outline-none focus:border-green-500"
+                    />
+                    {commissionDrafts[r.id] !== undefined && (
+                      <button
+                        onClick={() => saveCommission(r)}
+                        className="text-xs font-semibold text-green-700 hover:underline"
+                      >
+                        บันทึก
+                      </button>
+                    )}
+                  </div>
+                </td>
+                <td className="px-4 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className={r.unsettledCommission > 0 ? "font-semibold text-amber-600" : "text-gray-400"}>
+                      ฿{r.unsettledCommission.toLocaleString("th-TH")}
+                    </span>
+                    {r.unsettledCommission > 0 && (
+                      <button
+                        onClick={() => settleCommission(r)}
+                        disabled={settlingId === r.id}
+                        className="text-xs font-semibold text-green-700 hover:underline disabled:opacity-50"
+                      >
+                        {settlingId === r.id ? "กำลังบันทึก..." : "จ่ายแล้ว"}
+                      </button>
+                    )}
+                  </div>
+                </td>
                 <td className="px-4 py-2">
                   <button
                     onClick={() => toggleActive(r)}
@@ -166,7 +243,7 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
             ))}
             {riders.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-400">
                   ยังไม่มีคนขับในระบบ
                 </td>
               </tr>
