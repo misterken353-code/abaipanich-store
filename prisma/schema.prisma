@@ -143,6 +143,8 @@ model Order {
   riderCommission    Decimal?
   commissionSettled  Boolean    @default(false)
   settledAt          DateTime?
+  hasPreOrder     Boolean        @default(false) // true ถ้ามีรายการ Pre-order อย่างน้อย 1 ชิ้น ณ ตอนสั่งซื้อ
+  stockArrivedAt  DateTime?      // แอดมินกด "สินค้ามาถึงร้านแล้ว" — ต้องตั้งค่านี้ก่อนออเดอร์ Pre-order ถึงจะเข้าคิวส่งของปกติได้
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
@@ -179,6 +181,7 @@ model OrderItem {
   nameSnapshot String
   priceSnapshot Decimal
   quantity   Int
+  isPreOrder Boolean  @default(false) // snapshot จาก SyncedProduct.isPreOrder ตอนสั่งซื้อ
 }
 
 // ============================================================

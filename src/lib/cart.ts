@@ -5,6 +5,7 @@ export interface CartItem {
   price: number;
   imageUrl: string | null;
   qty: number;
+  isPreOrder: boolean;
 }
 
 const CART_KEY = "sabaipanich-cart";

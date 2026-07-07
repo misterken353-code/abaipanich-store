@@ -49,6 +49,13 @@ export default function CheckoutPage() {
     setLoaded(true);
   }, []);
 
+  const hasPreOrder = cart.some((i) => i.isPreOrder);
+
+  // สินค้า Pre-order ต้องชำระเงินล่วงหน้าเท่านั้น (ร้านต้องมีเงินไปสั่งของก่อน)
+  useEffect(() => {
+    if (hasPreOrder) setPaymentMethod("TRANSFER");
+  }, [hasPreOrder]);
+
   useEffect(() => {
     setLocation(null);
     setLocationError(null);
@@ -177,6 +184,19 @@ export default function CheckoutPage() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-6">
+        {hasPreOrder && (
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+            <span className="text-2xl mt-0.5">🕐</span>
+            <div className="text-sm">
+              <p className="font-bold text-amber-800">ตะกร้ามีสินค้า Pre-order — นัดรับสินค้า ประมาณ 2–5 วัน</p>
+              <p className="text-amber-700 text-xs mt-1 leading-relaxed">
+                เมื่อโอนเงินยืนยันแล้ว ทางร้านจะรีบสั่งสินค้าเข้ามาให้ทันที รับประกันความมั่นใจ:
+                หากไม่ได้รับสินค้าภายใน 5 วัน สามารถขอคืนเงินเต็มจำนวนได้ที่หน้าร้าน — จึงต้องชำระเงินผ่าน
+                PromptPay ล่วงหน้าเท่านั้นสำหรับสินค้า Pre-order
+              </p>
+            </div>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">เบอร์โทรศัพท์ *</label>
@@ -270,28 +290,37 @@ export default function CheckoutPage() {
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">วิธีชำระเงิน *</label>
             <div className="space-y-2">
-              {PAYMENT_OPTIONS.map((opt) => (
-                <label
-                  key={opt.value}
-                  className={`flex items-start gap-3 border rounded-xl px-4 py-3 cursor-pointer transition-colors ${
-                    paymentMethod === opt.value
-                      ? "border-emerald-500 bg-emerald-50"
-                      : "border-gray-200 hover:border-emerald-300"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    checked={paymentMethod === opt.value}
-                    onChange={() => setPaymentMethod(opt.value)}
-                    className="mt-1 accent-emerald-700"
-                  />
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">{opt.label}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{opt.desc}</p>
-                  </div>
-                </label>
-              ))}
+              {PAYMENT_OPTIONS.map((opt) => {
+                const disabled = hasPreOrder && opt.value === "COD";
+                return (
+                  <label
+                    key={opt.value}
+                    className={`flex items-start gap-3 border rounded-xl px-4 py-3 transition-colors ${
+                      disabled
+                        ? "opacity-40 cursor-not-allowed border-gray-200"
+                        : "cursor-pointer " +
+                          (paymentMethod === opt.value
+                            ? "border-emerald-500 bg-emerald-50"
+                            : "border-gray-200 hover:border-emerald-300")
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      checked={paymentMethod === opt.value}
+                      disabled={disabled}
+                      onChange={() => setPaymentMethod(opt.value)}
+                      className="mt-1 accent-emerald-700"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">{opt.label}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {disabled ? "ไม่รองรับสำหรับสินค้า Pre-order — ต้องชำระเงินล่วงหน้าเท่านั้น" : opt.desc}
+                      </p>
+                    </div>
+                  </label>
+                );
+              })}
             </div>
           </div>
 

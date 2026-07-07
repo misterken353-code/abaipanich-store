@@ -12,7 +12,14 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: str
 
   const [available, mine, history] = await Promise.all([
     prisma.order.findMany({
-      where: { shippingMethod: "MOTORCYCLE", riderId: null, status: { not: "CANCELLED" }, acknowledgedAt: { not: null } },
+      where: {
+        shippingMethod: "MOTORCYCLE",
+        riderId: null,
+        status: { not: "CANCELLED" },
+        acknowledgedAt: { not: null },
+        // ออเดอร์ที่มีของ Pre-order ต้องรอแอดมินกด "สินค้ามาถึงร้านแล้ว" ก่อน ถึงจะเข้าคิวให้คนขับกดรับงานได้
+        OR: [{ hasPreOrder: false }, { stockArrivedAt: { not: null } }],
+      },
       include: { customer: true, items: true },
       orderBy: { createdAt: "asc" },
     }),

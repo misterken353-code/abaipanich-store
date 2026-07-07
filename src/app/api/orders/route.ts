@@ -78,6 +78,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // สินค้า Pre-order ต้องชำระเงินล่วงหน้าเท่านั้น (ร้านต้องมีเงินไปสั่งของก่อน) — เช็คฝั่ง server ตาม
+  // isPreOrder ของ SyncedProduct จริง ไม่เชื่อ client เพราะ paymentMethod ส่งมาจาก checkout form
+  const hasPreOrder = items.some((item) => productMap.get(item.productId)!.isPreOrder);
+  if (hasPreOrder && paymentMethod !== "TRANSFER") {
+    return NextResponse.json(
+      { error: "ตะกร้ามีสินค้า Pre-order ต้องชำระเงินล่วงหน้าผ่าน PromptPay เท่านั้น" },
+      { status: 400 }
+    );
+  }
+
   const totalAmount = items.reduce((sum, item) => {
     const product = productMap.get(item.productId)!;
     return sum + Number(product.salePrice) * item.qty;
@@ -112,6 +122,7 @@ export async function POST(req: NextRequest) {
           customerLng: customerLng ?? null,
           paymentMethod: paymentMethod as PaymentMethod,
           note: note ?? null,
+          hasPreOrder,
           items: {
             create: items.map((item) => {
               const product = productMap.get(item.productId)!;
@@ -120,6 +131,7 @@ export async function POST(req: NextRequest) {
                 nameSnapshot: product.name,
                 priceSnapshot: product.salePrice,
                 quantity: item.qty,
+                isPreOrder: product.isPreOrder,
               };
             }),
           },
@@ -155,12 +167,13 @@ export async function POST(req: NextRequest) {
           ? `ชำระเงิน: ${PAYMENT_LABEL.COD} (เงินสด)`
           : `ชำระเงิน: ${PAYMENT_LABEL.TRANSFER} (รอลูกค้าส่งสลิป)`;
       await notifyShop(
-        `🛒 ออเดอร์ใหม่ ${order.orderNo}\n` +
+        `🛒 ออเดอร์ใหม่ ${order.orderNo}${hasPreOrder ? " (มีสินค้า Pre-order)" : ""}\n` +
           `ลูกค้า: ${customer.name.trim()} (${customer.phone.trim()})\n` +
           `${itemLines}\n` +
           `ยอดรวม: ${totalAmount.toLocaleString("th-TH")} บาท\n` +
           `จัดส่ง: ${SHIPPING_LABEL[shippingMethod] ?? shippingMethod}${mapsLine}\n` +
           `${paymentLine}` +
+          (hasPreOrder ? `\n📦 มีสินค้า Pre-order — อย่าลืมกด "สินค้ามาถึงร้านแล้ว" ตอนของเข้า` : "") +
           (appUrl ? `\n\nดูรายละเอียด: ${appUrl}/admin/orders/${order.id}` : "")
       );
     } catch (e) {

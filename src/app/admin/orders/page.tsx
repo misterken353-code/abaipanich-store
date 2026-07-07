@@ -26,8 +26,24 @@ const PAYMENT_LABEL: Record<string, string> = {
   TRANSFER: "โอนเงิน",
 };
 
-export default async function AdminOrdersPage() {
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
+  const query = q?.trim();
+
   const orders = await prisma.order.findMany({
+    where: query
+      ? {
+          OR: [
+            { orderNo: { contains: query, mode: "insensitive" } },
+            { customer: { name: { contains: query, mode: "insensitive" } } },
+            { customer: { phone: { contains: query, mode: "insensitive" } } },
+          ],
+        }
+      : undefined,
     include: { customer: true, items: true, rider: true },
     orderBy: { createdAt: "desc" },
     take: 200,
@@ -36,6 +52,30 @@ export default async function AdminOrdersPage() {
   return (
     <div>
       <h1 className="mb-4 text-xl font-semibold">ออเดอร์ลูกค้า</h1>
+
+      <form className="mb-4 flex gap-2" action="/admin/orders" method="get">
+        <input
+          type="text"
+          name="q"
+          defaultValue={query ?? ""}
+          placeholder="ค้นหาเลขที่ออเดอร์ (เช่น SP202607050004) ชื่อ หรือเบอร์โทรลูกค้า"
+          className="w-full max-w-md rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-400"
+        />
+        <button
+          type="submit"
+          className="rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800"
+        >
+          ค้นหา
+        </button>
+        {query && (
+          <a
+            href="/admin/orders"
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+          >
+            ล้างการค้นหา
+          </a>
+        )}
+      </form>
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="w-full text-sm">
@@ -60,6 +100,14 @@ export default async function AdminOrdersPage() {
                   <Link href={`/admin/orders/${o.id}`} className="font-medium text-green-700 hover:underline">
                     {o.orderNo}
                   </Link>
+                  {o.hasPreOrder && (
+                    <span
+                      className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full text-amber-600 bg-amber-50"
+                      title={o.stockArrivedAt ? `สินค้าถึงร้านแล้ว ${o.stockArrivedAt.toLocaleString("th-TH")}` : "รอสินค้า Pre-order เข้าร้าน"}
+                    >
+                      {o.stockArrivedAt ? "✓ ของถึงแล้ว" : "🕐 รอของ"}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-2">
                   {o.acknowledgedAt ? (
@@ -94,7 +142,7 @@ export default async function AdminOrdersPage() {
             {orders.length === 0 && (
               <tr>
                 <td colSpan={10} className="px-4 py-8 text-center text-gray-400">
-                  ยังไม่มีออเดอร์
+                  {query ? `ไม่พบออเดอร์ที่ตรงกับ "${query}"` : "ยังไม่มีออเดอร์"}
                 </td>
               </tr>
             )}

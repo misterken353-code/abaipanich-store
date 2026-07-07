@@ -4,6 +4,7 @@ import StatusButtons from "./StatusButtons";
 import AcknowledgeButton from "./AcknowledgeButton";
 import AssignRiderButton from "./AssignRiderButton";
 import DoneButton from "./DoneButton";
+import StockArrivedButton from "./StockArrivedButton";
 
 const SHIPPING_LABEL: Record<string, string> = {
   PICKUP: "รับเองหน้าร้าน",
@@ -45,6 +46,17 @@ export default async function AdminOrderDetailPage({
         <AcknowledgeButton orderId={order.id} acknowledgedAt={order.acknowledgedAt?.toISOString() ?? null} />
       </div>
 
+      {order.hasPreOrder && (
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
+          <h2 className="mb-1 font-semibold text-amber-800">🕐 มีสินค้า Pre-order ในออเดอร์นี้</h2>
+          <p className="mb-3 text-xs text-amber-700">
+            ออเดอร์นี้จะยังไม่เข้าคิวให้คนขับกดรับงาน (กรณีเลือกส่งม้าเร็ว) จนกว่าจะกดปุ่มด้านล่างยืนยันว่าสินค้ามาถึงร้านแล้วจริง —
+            กดแล้วระบบจะเพิ่มจำนวนสต็อกของสินค้า Pre-order ในออเดอร์นี้ให้ทันที (ลูกค้าคนอื่นสั่งซื้อต่อได้)
+          </p>
+          <StockArrivedButton orderId={order.id} stockArrivedAt={order.stockArrivedAt?.toISOString() ?? null} />
+        </div>
+      )}
+
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5">
         <h2 className="mb-3 font-semibold text-gray-700">สถานะออเดอร์</h2>
         <StatusButtons orderId={order.id} status={order.status} />
@@ -56,7 +68,14 @@ export default async function AdminOrderDetailPage({
           {order.items.map((item) => (
             <div key={item.id} className="flex items-center justify-between py-2 text-sm">
               <div>
-                <p className="font-medium text-gray-800">{item.nameSnapshot}</p>
+                <p className="font-medium text-gray-800">
+                  {item.nameSnapshot}
+                  {item.isPreOrder && (
+                    <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full text-amber-600 bg-amber-50">
+                      🕐 Pre-order
+                    </span>
+                  )}
+                </p>
                 <p className="text-xs text-gray-400">
                   {item.quantity} x {Number(item.priceSnapshot).toLocaleString("th-TH")}
                 </p>

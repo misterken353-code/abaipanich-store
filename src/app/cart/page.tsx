@@ -55,6 +55,15 @@ export default function CartPage() {
           </div>
         ) : (
           <>
+            {cart.some((i) => i.isPreOrder) && (
+              <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+                <span className="text-xl mt-0.5">🕐</span>
+                <p className="text-amber-700 text-xs leading-relaxed">
+                  <span className="font-bold text-amber-800">มีสินค้า Pre-order ในตะกร้า</span> — นัดรับสินค้าประมาณ
+                  2–5 วันหลังโอนเงิน รับประกันคืนเงินเต็มจำนวนที่ร้านหากไม่ได้ของภายใน 5 วัน
+                </p>
+              </div>
+            )}
             <div className="bg-white rounded-2xl border border-gray-100 divide-y">
               {cart.map((item) => (
                 <div key={item.productId} className="flex items-center gap-3 p-3">
@@ -71,9 +80,16 @@ export default function CartPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] text-gray-400 font-mono">{item.code}</p>
                     <p className="text-sm font-semibold text-gray-800 line-clamp-2">{item.name}</p>
-                    <p className="text-emerald-700 font-bold text-sm mt-1">
-                      ฿{item.price.toLocaleString("th-TH")}
-                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-emerald-700 font-bold text-sm">
+                        ฿{item.price.toLocaleString("th-TH")}
+                      </p>
+                      {item.isPreOrder && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-amber-600 bg-amber-50">
+                          🕐 นัดรับ 2–5 วัน
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button

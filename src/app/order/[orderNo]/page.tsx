@@ -52,6 +52,30 @@ export default async function OrderConfirmationPage({
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+        {order.hasPreOrder && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-start gap-3">
+            <span className="text-2xl mt-0.5">🕐</span>
+            <div className="text-sm">
+              {order.stockArrivedAt ? (
+                <>
+                  <p className="font-bold text-amber-800">✓ สินค้ามาถึงร้านแล้ว</p>
+                  <p className="text-amber-700 text-xs mt-1">
+                    ทางร้านกำลังจัดเตรียม{order.shippingMethod === "PICKUP" ? "ให้คุณมารับที่ร้านได้เลย" : "จัดส่งให้คุณ"}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-bold text-amber-800">คำสั่งซื้อนี้มีสินค้า Pre-order — นัดรับสินค้า ประมาณ 2–5 วัน</p>
+                  <p className="text-amber-700 text-xs mt-1 leading-relaxed">
+                    ทางร้านกำลังสั่งสินค้าเข้ามาให้คุณ รับประกันความมั่นใจ: หากไม่ได้รับสินค้าภายใน 5 วัน
+                    สามารถขอคืนเงินเต็มจำนวนได้ที่หน้าร้าน
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <div className="flex items-center justify-between mb-3">
             <span className="text-gray-500 text-sm">สถานะ</span>

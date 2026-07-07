@@ -43,6 +43,7 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
               price: product.salePrice,
               imageUrl: product.image1Url || product.image2Url,
               qty: 1,
+              isPreOrder: product.isPreOrder,
             },
           ];
       saveCart(next);
@@ -137,13 +138,14 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
       {activeTab === "preorder" && (
         <div className="bg-amber-50 border-b border-amber-200">
           <div className="max-w-[1600px] mx-auto px-4 py-3 flex items-start gap-3">
-            <span className="text-2xl mt-0.5">📦</span>
+            <span className="text-2xl mt-0.5">🕐</span>
             <div>
               <p className="text-amber-800 font-bold text-sm">
-                สินค้า Pre-order — รับสินค้าภายใน 3–5 วันทำการ
+                สั่งจองได้เลย — ทางร้านนัดรับสินค้าให้คุณ ประมาณ 2–5 วัน
               </p>
-              <p className="text-amber-600 text-xs mt-0.5">
-                สั่งจองได้เลย ทางร้านจะจัดส่งให้หลังยืนยันออเดอร์
+              <p className="text-amber-700 text-xs mt-0.5">
+                สั่งซื้อได้ตามปกติ เพียงโอนเงินชำระค่าสินค้าล่วงหน้า ทางร้านจะรีบสั่งของเข้ามาให้ทันที
+                รับประกัน: หากไม่ได้รับสินค้าภายใน 5 วัน คืนเงินเต็มจำนวนได้ที่หน้าร้าน
               </p>
             </div>
           </div>
@@ -291,7 +293,7 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
           </div>
 
           <p className="mt-4 text-emerald-300/70 text-xs">
-            Pre-order รับสินค้าภายใน 3–5 วันทำการ
+            🕐 สินค้า Pre-order นัดรับ ประมาณ 2–5 วัน — ไม่ได้ของภายใน 5 วัน คืนเงินเต็มจำนวนที่ร้าน
           </p>
         </div>
       </footer>
@@ -365,7 +367,7 @@ function ProductCard({
 
         {isPreOrder && (
           <div className="absolute top-0 left-0 right-0 bg-amber-500/90 text-white text-[10px] font-bold text-center py-1">
-            🕐 Pre-order · 3–5 วัน
+            🕐 นัดรับสินค้า · 2–5 วัน
           </div>
         )}
 
