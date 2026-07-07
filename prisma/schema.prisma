@@ -182,6 +182,7 @@ model OrderItem {
   priceSnapshot Decimal
   quantity   Int
   isPreOrder Boolean  @default(false) // snapshot จาก SyncedProduct.isPreOrder ตอนสั่งซื้อ
+  arrivedAt  DateTime? // แอดมินยืนยันว่าซื้อของชิ้นนี้เข้าร้านแล้ว (ต่อรายการ ไม่ใช่ต่อออเดอร์)
 }
 
 // ============================================================

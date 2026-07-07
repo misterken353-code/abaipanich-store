@@ -71,8 +71,12 @@ export default async function AdminOrderDetailPage({
                 <p className="font-medium text-gray-800">
                   {item.nameSnapshot}
                   {item.isPreOrder && (
-                    <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full text-amber-600 bg-amber-50">
-                      🕐 Pre-order
+                    <span
+                      className={`ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        item.arrivedAt ? "text-emerald-600 bg-emerald-50" : "text-amber-600 bg-amber-50"
+                      }`}
+                    >
+                      {item.arrivedAt ? "✓ ของถึงแล้ว" : "🕐 Pre-order — รอของ"}
                     </span>
                   )}
                 </p>

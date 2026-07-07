@@ -25,6 +25,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/orders" className="rounded-lg px-3 py-2 hover:bg-gray-100">
             ออเดอร์ลูกค้า
           </Link>
+          <Link href="/admin/purchase-list" className="rounded-lg px-3 py-2 hover:bg-gray-100">
+            รายการที่ต้องสั่งซื้อ
+          </Link>
           <Link href="/admin/riders" className="rounded-lg px-3 py-2 hover:bg-gray-100">
             คนขับ (ม้าเร็ว)
           </Link>

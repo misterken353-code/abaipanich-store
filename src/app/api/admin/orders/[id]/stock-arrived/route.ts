@@ -23,18 +23,22 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     return NextResponse.json({ ok: true, notified: false, alreadyArrived: true });
   }
 
+  // เฉพาะรายการที่ยังไม่เคยยืนยันรับเข้า (กันบวกสต็อกซ้ำ ถ้าบางรายการถูกยืนยันไปแล้วผ่านหน้า "รายการที่ต้องสั่งซื้อ")
+  const pendingItems = order.items.filter((item) => item.isPreOrder && !item.arrivedAt);
+
   await prisma.$transaction([
     prisma.order.update({ where: { id }, data: { stockArrivedAt: new Date() } }),
+    ...pendingItems.map((item) =>
+      prisma.orderItem.update({ where: { id: item.id }, data: { arrivedAt: new Date() } })
+    ),
     // ของที่สั่งมาเข้าร้านแล้ว = รับสต็อกจริง — เพิ่มจำนวนคงเหลือให้ลูกค้าคนอื่นสั่งซื้อได้ต่อ
     // (เป็นแค่ cache ฝั่งนี้ ถ้า Sync สต็อกรอบถัดไปจะถูกเขียนทับด้วยตัวเลขจริงจาก GearGao อยู่ดี)
-    ...order.items
-      .filter((item) => item.isPreOrder)
-      .map((item) =>
-        prisma.syncedProduct.update({
-          where: { id: item.productId },
-          data: { availableQty: { increment: item.quantity }, isPreOrder: false },
-        })
-      ),
+    ...pendingItems.map((item) =>
+      prisma.syncedProduct.update({
+        where: { id: item.productId },
+        data: { availableQty: { increment: item.quantity }, isPreOrder: false },
+      })
+    ),
   ]);
 
   let notified = false;
