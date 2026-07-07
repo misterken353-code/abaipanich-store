@@ -17,11 +17,20 @@ export async function PATCH(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
-  const { lineChannelSecret, lineChannelAccessToken, lineShopUserId, promptPayId } = body as {
+  const {
+    lineChannelSecret,
+    lineChannelAccessToken,
+    lineShopUserId,
+    promptPayId,
+    facebookPageId,
+    facebookPageAccessToken,
+  } = body as {
     lineChannelSecret?: string | null;
     lineChannelAccessToken?: string | null;
     lineShopUserId?: string | null;
     promptPayId?: string | null;
+    facebookPageId?: string | null;
+    facebookPageAccessToken?: string | null;
   };
 
   const settings = await prisma.appSettings.upsert({
@@ -32,12 +41,18 @@ export async function PATCH(req: NextRequest) {
       lineChannelAccessToken: lineChannelAccessToken || null,
       lineShopUserId: lineShopUserId || null,
       promptPayId: promptPayId || null,
+      facebookPageId: facebookPageId || null,
+      facebookPageAccessToken: facebookPageAccessToken || null,
     },
     update: {
       ...(lineChannelSecret !== undefined ? { lineChannelSecret: lineChannelSecret || null } : {}),
       ...(lineChannelAccessToken !== undefined ? { lineChannelAccessToken: lineChannelAccessToken || null } : {}),
       ...(lineShopUserId !== undefined ? { lineShopUserId: lineShopUserId || null } : {}),
       ...(promptPayId !== undefined ? { promptPayId: promptPayId || null } : {}),
+      ...(facebookPageId !== undefined ? { facebookPageId: facebookPageId || null } : {}),
+      ...(facebookPageAccessToken !== undefined
+        ? { facebookPageAccessToken: facebookPageAccessToken || null }
+        : {}),
     },
   });
 

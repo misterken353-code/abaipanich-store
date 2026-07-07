@@ -8,6 +8,8 @@ interface Values {
   lineChannelAccessToken: string;
   lineShopUserId: string;
   promptPayId: string;
+  facebookPageId: string;
+  facebookPageAccessToken: string;
 }
 
 interface Props {
@@ -24,6 +26,8 @@ export default function SettingsForm({ initial }: Props) {
   const [lineChannelAccessToken, setLineChannelAccessToken] = useState(initial.lineChannelAccessToken);
   const [lineShopUserId, setLineShopUserId] = useState(initial.lineShopUserId);
   const [promptPayId, setPromptPayId] = useState(initial.promptPayId);
+  const [facebookPageId, setFacebookPageId] = useState(initial.facebookPageId);
+  const [facebookPageAccessToken, setFacebookPageAccessToken] = useState(initial.facebookPageAccessToken);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -38,6 +42,8 @@ export default function SettingsForm({ initial }: Props) {
     setLineChannelAccessToken(savedValues.lineChannelAccessToken);
     setLineShopUserId(savedValues.lineShopUserId);
     setPromptPayId(savedValues.promptPayId);
+    setFacebookPageId(savedValues.facebookPageId);
+    setFacebookPageAccessToken(savedValues.facebookPageAccessToken);
     setMessage(null);
     setEditing(false);
   }
@@ -52,6 +58,8 @@ export default function SettingsForm({ initial }: Props) {
         lineChannelAccessToken: lineChannelAccessToken.trim(),
         lineShopUserId: lineShopUserId.trim(),
         promptPayId: promptPayId.trim(),
+        facebookPageId: facebookPageId.trim(),
+        facebookPageAccessToken: facebookPageAccessToken.trim(),
       };
       const res = await fetch("/api/admin/settings", {
         method: "PATCH",
@@ -61,6 +69,8 @@ export default function SettingsForm({ initial }: Props) {
           lineChannelAccessToken: next.lineChannelAccessToken || null,
           lineShopUserId: next.lineShopUserId || null,
           promptPayId: next.promptPayId || null,
+          facebookPageId: next.facebookPageId || null,
+          facebookPageAccessToken: next.facebookPageAccessToken || null,
         }),
       });
       if (!res.ok) {
@@ -128,6 +138,29 @@ export default function SettingsForm({ initial }: Props) {
           className={fieldClass}
           placeholder="เบอร์โทร/เลขบัตรประชาชนที่ผูก PromptPay"
         />
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-semibold text-gray-700">Facebook Page ID</label>
+        <input
+          value={facebookPageId}
+          onChange={(e) => setFacebookPageId(e.target.value)}
+          disabled={!editing}
+          className={fieldClass}
+          placeholder="ดูได้จากหน้า “เกี่ยวกับ” ของเพจ Facebook"
+        />
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-semibold text-gray-700">Facebook Page Access Token</label>
+        <input
+          value={facebookPageAccessToken}
+          onChange={(e) => setFacebookPageAccessToken(e.target.value)}
+          disabled={!editing}
+          className={fieldClass}
+          placeholder="Long-lived Page Access Token จาก Graph API Explorer"
+        />
+        <p className="mt-1 text-xs text-gray-400">
+          ใช้สำหรับปุ่ม &quot;โพสต์ไปยัง Facebook&quot; ในหน้าแก้ไขเพจขาย
+        </p>
       </div>
 
       {message && <p className="text-sm text-gray-600">{message}</p>}

@@ -254,15 +254,16 @@ User อยากให้ระบบดึงชื่อจากบัญช
 **แก้แล้ว:** เปลี่ยนเป็นเช็ค `authjs.session-token` / `__Secure-authjs.session-token` ที่บรรทัด 10-12 ของ `src/proxy.ts` — ทดสอบแล้วว่า login → เข้า `/admin/orders` ได้ปกติหลังแก้
 **Note:** รหัสผ่าน admin เดิม (`admin@sabaipanich.com`) ไม่มีใครทราบ ระหว่างทดสอบได้รีเซ็ตด้วย `scripts/seed-admin.ts` เป็นรหัสผ่านชั่วคราว — **ต้องแจ้ง/เปลี่ยนรหัสผ่านจริงกับเจ้าของร้านอีกที**
 
-### ⬜ Phase 6 — Facebook Graph API Auto-post
-**ต้องรอ user เตรียม:** Facebook App (Business type) + Page Access Token ที่มี permission `pages_manage_posts`, `pages_read_engagement` (สร้างเองผ่าน Facebook Developers, ไม่ต้อง App Review ถ้า user เป็น admin ของเพจตัวเองและ app อยู่ใน Development mode)
+### ✅ Phase 6 — Facebook Graph API Auto-post (โค้ดเสร็จ 2026-07-07, รอ user สร้าง FB App จริง)
+**ต้องรอ user เตรียม:** Facebook App (Business type) + Page Access Token ที่มี permission `pages_manage_posts`, `pages_read_engagement` (สร้างเองผ่าน Facebook Developers, ไม่ต้อง App Review ถ้า user เป็น admin ของเพจตัวเองและ app อยู่ใน Development mode) — token ชั่วคราวจาก Graph API Explorer หมดอายุเร็ว ต้องแปลงเป็น long-lived ก่อนใช้จริง
 
-ต้องสร้าง:
-- `src/app/admin/settings/page.tsx` (หรือรวมกับหน้าอื่น) — ฟอร์มตั้งค่า `AppSettings.facebookPageId`/`facebookPageAccessToken`
-- ปุ่ม "โพสต์ Facebook" ในหน้า `admin/sale-pages/[id]` → `src/app/api/facebook/post/route.ts` (POST) รับ `salePageId`, ดึงรูป+ชื่อ+ราคาสินค้าใน `SalePageItem` มาประกอบแคปชั่น พร้อมลิงก์ `{NEXT_PUBLIC_APP_URL}/p/{slug}`
-  - ภาพเดียว: `POST https://graph.facebook.com/v21.0/{page-id}/photos` (multipart หรือ `url` param + `message`)
-  - หลายภาพ: อัปโหลดแต่ละรูปด้วย `published=false` ไปที่ `/photos` ก่อน เก็บ `id` แต่ละอันมาเป็น `attached_media` แล้วโพสต์รวมที่ `/feed`
-  - บันทึกผลลง `FacebookPost` (postId, permalink, status, error)
+**สิ่งที่ทำแล้ว:**
+- `src/lib/facebook.ts` — `getFacebookConfig()` (อ่านจาก `AppSettings` singleton เหมือน LINE, fallback env var), `postSalePageToFacebook(salePageId)` (Graph API v21.0 — มีรูปโพสต์ที่ `/{page-id}/photos` ด้วย `url`+`message`, ไม่มีรูปโพสต์ที่ `/{page-id}/feed` ด้วย `link`+`message`, ดึง permalink ตามด้วย GET แยก, บันทึกผลลง `FacebookPost` เสมอทั้งสำเร็จ/ล้มเหลว)
+- ฟอร์มตั้งค่า Facebook Page ID / Page Access Token เพิ่มใน `/admin/settings` (`SettingsForm.tsx`) ใช้ pattern เดียวกับ LINE
+- ปุ่ม "โพสต์ไปยัง Facebook" ในหน้า `admin/sale-pages/[id]` (`SalePageEditor.tsx`) → `POST /api/admin/sale-pages/[id]/facebook-post` พร้อมประวัติการโพสต์ก่อนหน้า (สถานะ/permalink/error)
+- แคปชั่นตอนนี้ใช้แค่ `title`+`description`+ลิงก์เพจ ยังไม่ได้ดึงรายการสินค้าแต่ละชิ้นมาใส่ (ทำเพิ่มได้ทีหลังถ้าต้องการ), ยังไม่รองรับหลายภาพ (multi-photo `attached_media`) — ใช้แค่ `coverUrl` เดียว
+
+**ยังไม่ได้ทดสอบ end-to-end กับ Facebook Page จริง** เพราะยังไม่มี Page Access Token — ทดสอบแค่ `tsc --noEmit` + `next build` ผ่าน ต้องรอ user เตรียม token แล้วลองกดปุ่มจริงอีกที
 
 ### 🔄 Phase 7 — LINE OA Messaging API (เริ่มแล้ว 2026-07-05 — รอ user สร้าง LINE Channel เพื่อใช้งานจริง)
 

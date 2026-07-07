@@ -31,14 +31,24 @@ interface SalePageMeta {
   isActive: boolean;
 }
 
+interface FacebookPostRecord {
+  id: string;
+  status: string;
+  permalink: string | null;
+  error: string | null;
+  createdAt: string;
+}
+
 export default function SalePageEditor({
   salePage,
   initialItems,
   allProducts,
+  facebookPosts,
 }: {
   salePage: SalePageMeta;
   initialItems: Item[];
   allProducts: Product[];
+  facebookPosts: FacebookPostRecord[];
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(salePage.title);
@@ -50,6 +60,9 @@ export default function SalePageEditor({
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [posts, setPosts] = useState<FacebookPostRecord[]>(facebookPosts);
+  const [posting, setPosting] = useState(false);
+  const [postMessage, setPostMessage] = useState<string | null>(null);
 
   const selectedIds = useMemo(() => new Set(items.map((it) => it.productId)), [items]);
 
@@ -126,6 +139,36 @@ export default function SalePageEditor({
     }
   }
 
+  async function handlePostToFacebook() {
+    setPosting(true);
+    setPostMessage(null);
+    try {
+      const res = await fetch(`/api/admin/sale-pages/${salePage.id}/facebook-post`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPostMessage(data.error ?? "โพสต์ไม่สำเร็จ");
+      } else {
+        setPostMessage("โพสต์ไปยัง Facebook เรียบร้อย");
+        setPosts((prev) => [
+          {
+            id: data.post.id,
+            status: data.post.status,
+            permalink: data.post.permalink,
+            error: data.post.error,
+            createdAt: new Date().toISOString(),
+          },
+          ...prev,
+        ]);
+      }
+    } catch {
+      setPostMessage("เชื่อมต่อไม่ได้");
+    } finally {
+      setPosting(false);
+    }
+  }
+
   async function handleDelete() {
     if (!confirm(`ลบเพจ "${title}" ใช่ไหม?`)) return;
     const res = await fetch(`/api/admin/sale-pages/${salePage.id}`, { method: "DELETE" });
@@ -199,6 +242,62 @@ export default function SalePageEditor({
           <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
           <span>เผยแพร่เพจนี้ (ลูกค้าเข้าดูได้ที่ /p/{slug})</span>
         </label>
+      </div>
+
+      <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-medium text-gray-700">Facebook</h2>
+          <div className="flex items-center gap-2">
+            {postMessage && <span className="text-sm text-gray-600">{postMessage}</span>}
+            <button
+              onClick={handlePostToFacebook}
+              disabled={posting}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {posting ? "กำลังโพสต์..." : "โพสต์ไปยัง Facebook"}
+            </button>
+          </div>
+        </div>
+        {!isActive && (
+          <p className="mt-2 text-xs text-amber-600">
+            เพจนี้ยังไม่ได้เผยแพร่ — บันทึกลิงก์ /p/{slug} ไว้ก่อนโพสต์ ลูกค้าจะเข้าดูไม่ได้จนกว่าจะติ๊กเผยแพร่และกดบันทึก
+          </p>
+        )}
+        {posts.length > 0 && (
+          <div className="mt-3 divide-y text-sm">
+            {posts.map((p) => (
+              <div key={p.id} className="flex items-center justify-between py-2">
+                <div>
+                  <span
+                    className={
+                      p.status === "POSTED"
+                        ? "text-green-600"
+                        : p.status === "FAILED"
+                          ? "text-red-600"
+                          : "text-gray-500"
+                    }
+                  >
+                    {p.status === "POSTED" ? "โพสต์สำเร็จ" : p.status === "FAILED" ? "โพสต์ไม่สำเร็จ" : p.status}
+                  </span>
+                  {p.error && <span className="ml-2 text-xs text-gray-400">{p.error}</span>}
+                  <span className="ml-2 text-xs text-gray-400">
+                    {new Date(p.createdAt).toLocaleString("th-TH")}
+                  </span>
+                </div>
+                {p.permalink && (
+                  <a
+                    href={p.permalink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    ดูโพสต์ →
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="mt-6">

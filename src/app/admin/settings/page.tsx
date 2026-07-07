@@ -21,6 +21,8 @@ export default async function AdminSettingsPage() {
           lineChannelAccessToken: settings?.lineChannelAccessToken ?? "",
           lineShopUserId: settings?.lineShopUserId ?? "",
           promptPayId: settings?.promptPayId ?? "",
+          facebookPageId: settings?.facebookPageId ?? "",
+          facebookPageAccessToken: settings?.facebookPageAccessToken ?? "",
         }}
       />
 
