@@ -143,6 +143,9 @@ model Order {
   riderCommission    Decimal?
   commissionSettled  Boolean    @default(false)
   settledAt          DateTime?
+  deliveryFee     Decimal?       @default(0) // คำนวณจากระยะทางจริงตอนสร้างออเดอร์ (MOTORCYCLE เท่านั้น) — ยังจ่ายแยกให้คนขับเหมือนเดิม ไม่รวมใน totalAmount/QR
+  codRemitted     Boolean        @default(false) // true = คนขับนำเงินสดค่าสินค้า (COD) มาคืนร้านแล้ว
+  codRemittedAt   DateTime?
   hasPreOrder     Boolean        @default(false) // true ถ้ามีรายการ Pre-order อย่างน้อย 1 ชิ้น ณ ตอนสั่งซื้อ
   stockArrivedAt  DateTime?      // แอดมินกด "สินค้ามาถึงร้านแล้ว" — ต้องตั้งค่านี้ก่อนออเดอร์ Pre-order ถึงจะเข้าคิวส่งของปกติได้
   createdAt       DateTime       @default(now())
@@ -229,5 +232,7 @@ model AppSettings {
   lineChannelSecret      String? @db.Text
   lineChannelAccessToken String? @db.Text
   lineShopUserId         String? // userId ของแอดมิน/กลุ่มร้าน ที่จะ push แจ้งออเดอร์ใหม่/โลเคชั่นเข้าไป
+  storeLat               Float?  // พิกัดร้าน ใช้คำนวณค่าส่งม้าเร็วตามระยะทางจริง
+  storeLng               Float?
   updatedAt              DateTime @updatedAt
 }

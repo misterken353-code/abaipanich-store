@@ -24,6 +24,8 @@ export async function PATCH(req: NextRequest) {
     promptPayId,
     facebookPageId,
     facebookPageAccessToken,
+    storeLat,
+    storeLng,
   } = body as {
     lineChannelSecret?: string | null;
     lineChannelAccessToken?: string | null;
@@ -31,6 +33,8 @@ export async function PATCH(req: NextRequest) {
     promptPayId?: string | null;
     facebookPageId?: string | null;
     facebookPageAccessToken?: string | null;
+    storeLat?: number | null;
+    storeLng?: number | null;
   };
 
   const settings = await prisma.appSettings.upsert({
@@ -43,6 +47,8 @@ export async function PATCH(req: NextRequest) {
       promptPayId: promptPayId || null,
       facebookPageId: facebookPageId || null,
       facebookPageAccessToken: facebookPageAccessToken || null,
+      storeLat: storeLat ?? null,
+      storeLng: storeLng ?? null,
     },
     update: {
       ...(lineChannelSecret !== undefined ? { lineChannelSecret: lineChannelSecret || null } : {}),
@@ -53,6 +59,8 @@ export async function PATCH(req: NextRequest) {
       ...(facebookPageAccessToken !== undefined
         ? { facebookPageAccessToken: facebookPageAccessToken || null }
         : {}),
+      ...(storeLat !== undefined ? { storeLat: storeLat ?? null } : {}),
+      ...(storeLng !== undefined ? { storeLng: storeLng ?? null } : {}),
     },
   });
 

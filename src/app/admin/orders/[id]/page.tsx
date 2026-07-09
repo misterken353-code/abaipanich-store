@@ -101,7 +101,21 @@ export default async function AdminOrderDetailPage({
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5 text-sm text-gray-600">
         <h2 className="mb-2 font-semibold text-gray-700">การจัดส่งและชำระเงิน</h2>
         <p>วิธีชำระเงิน: {PAYMENT_LABEL[order.paymentMethod] ?? order.paymentMethod}</p>
+        {order.paymentMethod === "COD" && (
+          <p className="text-xs">
+            {order.codRemitted ? (
+              <span className="font-semibold text-emerald-600">✓ คนขับนำเงินสดส่งร้านแล้ว</span>
+            ) : (
+              <span className="font-semibold text-amber-600">ยังไม่ได้นำเงินสดส่งร้าน</span>
+            )}
+          </p>
+        )}
         <p>วิธีจัดส่ง: {SHIPPING_LABEL[order.shippingMethod] ?? order.shippingMethod}</p>
+        {order.shippingMethod === "MOTORCYCLE" && order.deliveryFee != null && Number(order.deliveryFee) > 0 && (
+          <p className="text-xs text-gray-500">
+            ค่าส่ง (คนขับเก็บสดจากลูกค้า): {Number(order.deliveryFee).toLocaleString("th-TH")} บาท
+          </p>
+        )}
         {order.shippingAddress && <p>ที่อยู่: {order.shippingAddress}</p>}
         {order.customerLat != null && order.customerLng != null && (
           <a

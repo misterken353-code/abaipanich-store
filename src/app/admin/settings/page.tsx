@@ -23,6 +23,8 @@ export default async function AdminSettingsPage() {
           promptPayId: settings?.promptPayId ?? "",
           facebookPageId: settings?.facebookPageId ?? "",
           facebookPageAccessToken: settings?.facebookPageAccessToken ?? "",
+          storeLat: settings?.storeLat ?? null,
+          storeLng: settings?.storeLng ?? null,
         }}
       />
 

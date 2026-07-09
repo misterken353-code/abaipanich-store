@@ -10,6 +10,8 @@ interface Values {
   promptPayId: string;
   facebookPageId: string;
   facebookPageAccessToken: string;
+  storeLat: number | null;
+  storeLng: number | null;
 }
 
 interface Props {
@@ -28,9 +30,12 @@ export default function SettingsForm({ initial }: Props) {
   const [promptPayId, setPromptPayId] = useState(initial.promptPayId);
   const [facebookPageId, setFacebookPageId] = useState(initial.facebookPageId);
   const [facebookPageAccessToken, setFacebookPageAccessToken] = useState(initial.facebookPageAccessToken);
+  const [storeLat, setStoreLat] = useState(initial.storeLat);
+  const [storeLng, setStoreLng] = useState(initial.storeLng);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [locating, setLocating] = useState(false);
 
   function startEditing() {
     setMessage(null);
@@ -44,8 +49,30 @@ export default function SettingsForm({ initial }: Props) {
     setPromptPayId(savedValues.promptPayId);
     setFacebookPageId(savedValues.facebookPageId);
     setFacebookPageAccessToken(savedValues.facebookPageAccessToken);
+    setStoreLat(savedValues.storeLat);
+    setStoreLng(savedValues.storeLng);
     setMessage(null);
     setEditing(false);
+  }
+
+  function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      setMessage("อุปกรณ์นี้ไม่รองรับการแชร์โลเคชั่น");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setStoreLat(pos.coords.latitude);
+        setStoreLng(pos.coords.longitude);
+        setLocating(false);
+      },
+      () => {
+        setMessage("ดึงตำแหน่งไม่สำเร็จ กรุณาอนุญาตการเข้าถึงตำแหน่ง");
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -60,6 +87,8 @@ export default function SettingsForm({ initial }: Props) {
         promptPayId: promptPayId.trim(),
         facebookPageId: facebookPageId.trim(),
         facebookPageAccessToken: facebookPageAccessToken.trim(),
+        storeLat,
+        storeLng,
       };
       const res = await fetch("/api/admin/settings", {
         method: "PATCH",
@@ -71,6 +100,8 @@ export default function SettingsForm({ initial }: Props) {
           promptPayId: next.promptPayId || null,
           facebookPageId: next.facebookPageId || null,
           facebookPageAccessToken: next.facebookPageAccessToken || null,
+          storeLat: next.storeLat,
+          storeLng: next.storeLng,
         }),
       });
       if (!res.ok) {
@@ -166,6 +197,44 @@ export default function SettingsForm({ initial }: Props) {
         <p className="mt-1 text-xs text-gray-400">
           เดิมใช้โพสต์อัตโนมัติผ่าน API แต่ Meta กำหนดให้ต้องผ่าน Business Verification ยุ่งยากเกินไป
           ตอนนี้เปลี่ยนไปใช้วิธีคัดลอกข้อความ+เปิดหน้าเพจแทน (ดูช่อง Page ID ด้านบน) ไม่ต้องกรอกช่องนี้ก็ได้
+        </p>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-semibold text-gray-700">พิกัดร้าน (สำหรับคำนวณค่าส่ง)</label>
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="number"
+            step="any"
+            value={storeLat ?? ""}
+            onChange={(e) => setStoreLat(e.target.value === "" ? null : Number(e.target.value))}
+            disabled={!editing}
+            className={fieldClass}
+            placeholder="ละติจูด (lat)"
+          />
+          <input
+            type="number"
+            step="any"
+            value={storeLng ?? ""}
+            onChange={(e) => setStoreLng(e.target.value === "" ? null : Number(e.target.value))}
+            disabled={!editing}
+            className={fieldClass}
+            placeholder="ลองจิจูด (lng)"
+          />
+        </div>
+        {editing && (
+          <button
+            type="button"
+            onClick={useCurrentLocation}
+            disabled={locating}
+            className="mt-2 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+          >
+            {locating ? "กำลังดึงตำแหน่ง..." : "📍 ใช้ตำแหน่งปัจจุบัน"}
+          </button>
+        )}
+        <p className="mt-1 text-xs text-gray-400">
+          ใช้คำนวณค่าส่งม้าเร็วตามระยะทางจริง — กดปุ่มนี้ตอนอยู่ที่ร้าน หรือใส่พิกัดจาก Google Maps เอง
+          ถ้ายังไม่ตั้งค่านี้ ระบบจะแสดงแค่สูตรคำนวณเป็นข้อความเหมือนเดิม
         </p>
       </div>
 

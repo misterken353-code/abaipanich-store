@@ -14,6 +14,7 @@ interface Rider {
   avgRating: number | null;
   ratedCount: number;
   unsettledCommission: number;
+  unsettledCod: number;
 }
 
 export default function RidersManager({ riders }: { riders: Rider[] }) {
@@ -26,6 +27,7 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [commissionDrafts, setCommissionDrafts] = useState<Record<string, string>>({});
   const [settlingId, setSettlingId] = useState<string | null>(null);
+  const [settlingCodId, setSettlingCodId] = useState<string | null>(null);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -110,6 +112,18 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
     }
   }
 
+  async function settleCod(rider: Rider) {
+    if (!confirm(`ยืนยันว่า "${rider.name}" นำเงินสด (COD) ฿${rider.unsettledCod.toLocaleString("th-TH")} มาคืนร้านแล้ว?`))
+      return;
+    setSettlingCodId(rider.id);
+    try {
+      await fetch(`/api/admin/riders/${rider.id}/settle-cod`, { method: "POST" });
+      router.refresh();
+    } finally {
+      setSettlingCodId(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <form onSubmit={handleAdd} className="max-w-xl space-y-3 rounded-xl border border-gray-200 bg-white p-5">
@@ -166,6 +180,7 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
               <th className="px-4 py-2">คะแนน</th>
               <th className="px-4 py-2">ค่าคอมฯ/งาน</th>
               <th className="px-4 py-2">ค้างจ่าย</th>
+              <th className="px-4 py-2">เงินสดค้างนำส่ง</th>
               <th className="px-4 py-2">สถานะ</th>
               <th className="px-4 py-2"></th>
             </tr>
@@ -225,6 +240,22 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
                   </div>
                 </td>
                 <td className="px-4 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className={r.unsettledCod > 0 ? "font-semibold text-amber-600" : "text-gray-400"}>
+                      ฿{r.unsettledCod.toLocaleString("th-TH")}
+                    </span>
+                    {r.unsettledCod > 0 && (
+                      <button
+                        onClick={() => settleCod(r)}
+                        disabled={settlingCodId === r.id}
+                        className="text-xs font-semibold text-green-700 hover:underline disabled:opacity-50"
+                      >
+                        {settlingCodId === r.id ? "กำลังบันทึก..." : "นำส่งเงินแล้ว"}
+                      </button>
+                    )}
+                  </div>
+                </td>
+                <td className="px-4 py-2">
                   <button
                     onClick={() => toggleActive(r)}
                     className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -243,7 +274,7 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
             ))}
             {riders.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={10} className="px-4 py-8 text-center text-gray-400">
                   ยังไม่มีคนขับในระบบ
                 </td>
               </tr>

@@ -5,7 +5,19 @@ export default async function AdminRidersPage() {
   const [ridersRaw, recentMessages] = await Promise.all([
     prisma.rider.findMany({
       orderBy: { createdAt: "desc" },
-      include: { orders: { where: { status: "SHIPPED" }, select: { riderRating: true, riderCommission: true, commissionSettled: true } } },
+      include: {
+        orders: {
+          where: { status: "SHIPPED" },
+          select: {
+            riderRating: true,
+            riderCommission: true,
+            commissionSettled: true,
+            paymentMethod: true,
+            totalAmount: true,
+            codRemitted: true,
+          },
+        },
+      },
     }),
     prisma.lineMessageLog.findMany({
       where: { direction: "IN" },
@@ -20,6 +32,9 @@ export default async function AdminRidersPage() {
     const unsettledCommission = r.orders
       .filter((o) => !o.commissionSettled)
       .reduce((s, o) => s + Number(o.riderCommission ?? 0), 0);
+    const unsettledCod = r.orders
+      .filter((o) => o.paymentMethod === "COD" && !o.codRemitted)
+      .reduce((s, o) => s + Number(o.totalAmount), 0);
     return {
       id: r.id,
       name: r.name,
@@ -31,6 +46,7 @@ export default async function AdminRidersPage() {
       avgRating,
       ratedCount: rated.length,
       unsettledCommission,
+      unsettledCod,
     };
   });
 

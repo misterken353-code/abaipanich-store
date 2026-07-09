@@ -13,6 +13,7 @@ interface OrderInfo {
   orderNo: string;
   totalAmount: string;
   paymentMethod: string;
+  deliveryFee: string | null;
   shippingAddress: string | null;
   customerLat: number | null;
   customerLng: number | null;
@@ -35,6 +36,7 @@ interface RiderStats {
   avgRating: number | null;
   ratedCount: number;
   unsettledCommission: number;
+  unsettledCod: number;
 }
 
 const LOCATION_UPDATE_INTERVAL_MS = 60_000;
@@ -165,6 +167,8 @@ export default function RiderDashboard({ token }: { token: string }) {
             <span>·</span>
             <span>ค้างจ่าย ฿{(rider?.unsettledCommission ?? 0).toLocaleString("th-TH")}</span>
             <span>·</span>
+            <span>เงินสดค้างนำส่งร้าน ฿{(rider?.unsettledCod ?? 0).toLocaleString("th-TH")}</span>
+            <span>·</span>
             <span>{locationShared ? "📍 แชร์ตำแหน่งอยู่" : "📍 ไม่ได้แชร์ตำแหน่ง"}</span>
           </div>
         </div>
@@ -267,7 +271,12 @@ function OrderCard({
       )}
       {order.paymentMethod === "COD" && (
         <p className="mt-2 text-xs font-bold text-amber-600 bg-amber-50 inline-block rounded-full px-3 py-1">
-          💵 เก็บเงินปลายทาง ฿{Number(order.totalAmount).toLocaleString("th-TH")}
+          💵 เก็บเงินค่าสินค้าจากลูกค้า ฿{Number(order.totalAmount).toLocaleString("th-TH")} (นำส่งร้าน)
+        </p>
+      )}
+      {order.deliveryFee != null && Number(order.deliveryFee) > 0 && (
+        <p className="mt-2 ml-2 text-xs font-bold text-emerald-700 bg-emerald-50 inline-block rounded-full px-3 py-1">
+          💰 ค่าส่งเก็บจากลูกค้า ฿{Number(order.deliveryFee).toLocaleString("th-TH")} (ของคุณ)
         </p>
       )}
 

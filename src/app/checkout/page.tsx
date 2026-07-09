@@ -41,6 +41,7 @@ export default function CheckoutPage() {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [deliveryFeeEstimate, setDeliveryFeeEstimate] = useState<{ distanceKm: number; fee: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,7 +60,26 @@ export default function CheckoutPage() {
   useEffect(() => {
     setLocation(null);
     setLocationError(null);
+    setDeliveryFeeEstimate(null);
   }, [shippingMethod]);
+
+  // พอแชร์โลเคชั่นสำเร็จสำหรับม้าเร็ว ลองประเมินค่าส่งจริงตามระยะทาง (ถ้าร้านตั้งพิกัดไว้แล้ว)
+  useEffect(() => {
+    if (shippingMethod !== "MOTORCYCLE" || !location) {
+      setDeliveryFeeEstimate(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/delivery-fee/estimate?lat=${location.lat}&lng=${location.lng}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setDeliveryFeeEstimate({ distanceKm: data.distanceKm, fee: data.fee });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [shippingMethod, location]);
 
   async function handlePhoneBlur() {
     const p = phone.trim();
@@ -268,6 +288,12 @@ export default function CheckoutPage() {
                 {location && (
                   <p className="text-xs text-emerald-700 mt-2">
                     ได้รับตำแหน่งของคุณแล้ว ({location.lat.toFixed(5)}, {location.lng.toFixed(5)})
+                  </p>
+                )}
+                {deliveryFeeEstimate && (
+                  <p className="text-xs font-bold text-amber-800 mt-2 bg-amber-100 rounded-lg px-3 py-2">
+                    ค่าส่งโดยประมาณ ฿{deliveryFeeEstimate.fee.toLocaleString("th-TH")} (ระยะทาง ~
+                    {deliveryFeeEstimate.distanceKm.toFixed(1)} กม.)
                   </p>
                 )}
                 {locationError && <p className="text-xs text-red-600 mt-2">{locationError}</p>}

@@ -142,7 +142,13 @@ export default async function OrderConfirmationPage({
           <p className="font-semibold text-gray-800 mb-2">การจัดส่ง</p>
           <p>วิธีชำระเงิน: {PAYMENT_LABEL[order.paymentMethod] ?? order.paymentMethod}</p>
           <p>วิธีจัดส่ง: {SHIPPING_LABEL[order.shippingMethod] ?? order.shippingMethod}</p>
-          <p className="text-xs text-gray-400">{SHIPPING_NOTE[order.shippingMethod]}</p>
+          {order.shippingMethod === "MOTORCYCLE" && order.deliveryFee != null && Number(order.deliveryFee) > 0 ? (
+            <p className="text-xs text-gray-400">
+              ค่าส่งโดยประมาณ: ฿{Number(order.deliveryFee).toLocaleString("th-TH")} (ชำระให้คนขับโดยตรง ไม่รวมในยอดนี้)
+            </p>
+          ) : (
+            <p className="text-xs text-gray-400">{SHIPPING_NOTE[order.shippingMethod]}</p>
+          )}
           {order.customerLat != null && order.customerLng != null && (
             <a
               href={`https://www.google.com/maps?q=${order.customerLat},${order.customerLng}`}

@@ -10,7 +10,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: str
     return NextResponse.json({ error: "ไม่พบบัญชีคนขับ หรือถูกปิดใช้งาน" }, { status: 404 });
   }
 
-  const [available, mine, history] = await Promise.all([
+  const [available, mine, history, unsettled] = await Promise.all([
     prisma.order.findMany({
       where: {
         shippingMethod: "MOTORCYCLE",
@@ -33,16 +33,24 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: str
       orderBy: { updatedAt: "desc" },
       take: 20,
     }),
+    // ยอดค้าง (ค่าคอมมิชชั่น/เงินสด COD) ต้องคำนวณจากทุกงาน ไม่ใช่แค่ 20 รายการล่าสุดใน history — ไม่งั้นยอดจะตกหล่นถ้าค้างเกิน 20 งาน
+    prisma.order.findMany({
+      where: { riderId: rider.id, status: "SHIPPED" },
+      select: { riderCommission: true, commissionSettled: true, paymentMethod: true, totalAmount: true, codRemitted: true },
+    }),
   ]);
 
   const rated = history.filter((o) => o.riderRating != null);
   const avgRating = rated.length > 0 ? rated.reduce((s, o) => s + (o.riderRating ?? 0), 0) / rated.length : null;
-  const unsettledCommission = history
+  const unsettledCommission = unsettled
     .filter((o) => !o.commissionSettled)
     .reduce((s, o) => s + Number(o.riderCommission ?? 0), 0);
+  const unsettledCod = unsettled
+    .filter((o) => o.paymentMethod === "COD" && !o.codRemitted)
+    .reduce((s, o) => s + Number(o.totalAmount), 0);
 
   return NextResponse.json({
-    rider: { name: rider.name, avgRating, ratedCount: rated.length, unsettledCommission },
+    rider: { name: rider.name, avgRating, ratedCount: rated.length, unsettledCommission, unsettledCod },
     available,
     mine,
     history,

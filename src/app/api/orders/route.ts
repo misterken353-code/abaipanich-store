@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ShippingMethod, PaymentMethod } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { notifyShop } from "@/lib/line";
+import { estimateDeliveryFee } from "@/lib/deliveryFee";
 import generatePayload from "promptpay-qr";
 import QRCode from "qrcode";
 
@@ -93,6 +94,19 @@ export async function POST(req: NextRequest) {
     return sum + Number(product.salePrice) * item.qty;
   }, 0);
 
+  const appSettings = await prisma.appSettings.findUnique({ where: { id: "singleton" } });
+
+  // ค่าส่งม้าเร็วคำนวณจากระยะทางจริงฝั่ง server เท่านั้น (ไม่เชื่อค่าจาก client) — ยังจ่ายแยกให้คนขับเหมือนเดิม
+  // ไม่รวมใน totalAmount/QR ถ้าร้านยังไม่ตั้งพิกัด (storeLat/storeLng) จะเป็น null แล้ว fallback ไปโชว์สูตรข้อความแทน
+  const deliveryFee =
+    shippingMethod === "MOTORCYCLE" &&
+    customerLat != null &&
+    customerLng != null &&
+    appSettings?.storeLat != null &&
+    appSettings?.storeLng != null
+      ? estimateDeliveryFee(appSettings.storeLat, appSettings.storeLng, customerLat, customerLng).fee
+      : null;
+
   try {
     const order = await prisma.$transaction(async (tx) => {
       let customerRecord = await tx.customer.findFirst({ where: { phone: customer.phone.trim() } });
@@ -122,6 +136,7 @@ export async function POST(req: NextRequest) {
           customerLng: customerLng ?? null,
           paymentMethod: paymentMethod as PaymentMethod,
           note: note ?? null,
+          deliveryFee,
           hasPreOrder,
           items: {
             create: items.map((item) => {
@@ -139,7 +154,7 @@ export async function POST(req: NextRequest) {
       });
     });
 
-    const promptPayId = process.env.PROMPTPAY_ID || (await prisma.appSettings.findUnique({ where: { id: "singleton" } }))?.promptPayId;
+    const promptPayId = process.env.PROMPTPAY_ID || appSettings?.promptPayId;
     if (paymentMethod === "TRANSFER" && promptPayId) {
       try {
         const payload = generatePayload(promptPayId, { amount: totalAmount });
@@ -166,12 +181,13 @@ export async function POST(req: NextRequest) {
         paymentMethod === "COD"
           ? `ชำระเงิน: ${PAYMENT_LABEL.COD} (เงินสด)`
           : `ชำระเงิน: ${PAYMENT_LABEL.TRANSFER} (รอลูกค้าส่งสลิป)`;
+      const deliveryFeeLine = deliveryFee != null ? `\nค่าส่ง (เก็บสด): ${deliveryFee.toLocaleString("th-TH")} บาท` : "";
       await notifyShop(
         `🛒 ออเดอร์ใหม่ ${order.orderNo}${hasPreOrder ? " (มีสินค้า Pre-order)" : ""}\n` +
           `ลูกค้า: ${customer.name.trim()} (${customer.phone.trim()})\n` +
           `${itemLines}\n` +
           `ยอดรวม: ${totalAmount.toLocaleString("th-TH")} บาท\n` +
-          `จัดส่ง: ${SHIPPING_LABEL[shippingMethod] ?? shippingMethod}${mapsLine}\n` +
+          `จัดส่ง: ${SHIPPING_LABEL[shippingMethod] ?? shippingMethod}${mapsLine}${deliveryFeeLine}\n` +
           `${paymentLine}` +
           (hasPreOrder ? `\n📦 มีสินค้า Pre-order — อย่าลืมกด "สินค้ามาถึงร้านแล้ว" ตอนของเข้า` : "") +
           (appUrl ? `\n\nดูรายละเอียด: ${appUrl}/admin/orders/${order.id}` : "")
