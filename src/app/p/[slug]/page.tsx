@@ -1,6 +1,38 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import SalePageClient, { type SalePageProduct } from "./SalePageClient";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const salePage = await prisma.salePage.findUnique({
+    where: { slug },
+    include: { items: { include: { product: true }, orderBy: { sortOrder: "asc" } } },
+  });
+
+  if (!salePage) return {};
+
+  const image = salePage.coverUrl || salePage.items[0]?.product.image1Url || undefined;
+  const description = salePage.description || "เลือกสินค้า สั่งซื้อ และชำระเงินผ่าน PromptPay";
+  const url = `${process.env.NEXT_PUBLIC_APP_URL || ""}/p/${salePage.slug}`;
+
+  return {
+    title: `${salePage.title} — สบายพาณิชย์`,
+    description,
+    openGraph: {
+      title: salePage.title,
+      description,
+      url,
+      siteName: "สบายพาณิชย์",
+      type: "website",
+      images: image ? [{ url: image }] : undefined,
+    },
+  };
+}
 
 export default async function SalePagePublicView({
   params,
