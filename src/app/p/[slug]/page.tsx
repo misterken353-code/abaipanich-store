@@ -16,7 +16,6 @@ export async function generateMetadata({
 
   if (!salePage) return {};
 
-  const image = salePage.coverUrl || salePage.items[0]?.product.image1Url || undefined;
   const description = salePage.description || "เลือกสินค้า สั่งซื้อ และชำระเงินผ่าน PromptPay";
   const url = `${process.env.NEXT_PUBLIC_APP_URL || ""}/p/${salePage.slug}`;
 
@@ -29,7 +28,6 @@ export async function generateMetadata({
       url,
       siteName: "สบายพาณิชย์",
       type: "website",
-      images: image ? [{ url: image }] : undefined,
     },
   };
 }
