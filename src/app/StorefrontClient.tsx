@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { cartCount, cartTotal, getCart, saveCart, type CartItem } from "@/lib/cart";
+import ImageLightbox from "@/components/ImageLightbox";
 
 export interface StorefrontProduct {
   id: string;
@@ -24,6 +25,7 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("instock");
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
 
   useEffect(() => {
     setCart(getCart());
@@ -72,15 +74,23 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
 
   const isSearching = search.trim().length > 0;
 
-  const filtered = sourceList.filter((p) => {
-    const matchSearch =
-      !isSearching ||
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.code.toLowerCase().includes(search.toLowerCase());
-    const matchCat =
-      isSearching || selectedCategory === null || (p.categoryName ?? "ไม่ระบุหมวด") === selectedCategory;
-    return matchSearch && matchCat;
-  });
+  const filtered = sourceList
+    .filter((p) => {
+      const matchSearch =
+        !isSearching ||
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.code.toLowerCase().includes(search.toLowerCase());
+      const matchCat =
+        isSearching || selectedCategory === null || (p.categoryName ?? "ไม่ระบุหมวด") === selectedCategory;
+      return matchSearch && matchCat;
+    })
+    .slice()
+    .sort((a, b) => {
+      const aHasImage = Boolean(a.image1Url || a.image2Url);
+      const bHasImage = Boolean(b.image1Url || b.image2Url);
+      if (aHasImage === bHasImage) return 0;
+      return aHasImage ? -1 : 1;
+    });
 
   const showCategoryGrid = !isSearching && selectedCategory === null;
 
@@ -248,13 +258,14 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
                 <p className="font-semibold">ไม่พบสินค้าที่ตรงกัน</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
                 {filtered.map((product) => (
                   <ProductCard
                     key={product.id}
                     product={product}
                     isPreOrder={activeTab === "preorder"}
                     onAddToCart={addToCart}
+                    onImageClick={(src, alt) => setLightbox({ src, alt })}
                   />
                 ))}
               </div>
@@ -312,6 +323,10 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
           </span>
         </Link>
       )}
+
+      {lightbox && (
+        <ImageLightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />
+      )}
     </div>
   );
 }
@@ -320,10 +335,12 @@ function ProductCard({
   product,
   isPreOrder,
   onAddToCart,
+  onImageClick,
 }: {
   product: StorefrontProduct;
   isPreOrder: boolean;
   onAddToCart: (product: StorefrontProduct) => void;
+  onImageClick: (src: string, alt: string) => void;
 }) {
   const imgSrc = product.image1Url || product.image2Url;
 
@@ -351,16 +368,27 @@ function ProductCard({
         isPreOrder ? "border-amber-200 hover:border-amber-300" : "border-gray-100 hover:border-amber-300/60"
       }`}
     >
-      <div className="aspect-square bg-gray-50 relative overflow-hidden">
+      <div className="aspect-square bg-gray-50 relative overflow-hidden p-2">
         {imgSrc ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={imgSrc}
-            alt={product.name}
-            className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${isPreOrder ? "opacity-80" : ""}`}
-          />
+          <button
+            type="button"
+            onClick={() => onImageClick(imgSrc, product.name)}
+            className="group/img relative block h-full w-full cursor-zoom-in overflow-hidden rounded-lg border border-gray-200 bg-white"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imgSrc}
+              alt={product.name}
+              className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${isPreOrder ? "opacity-80" : ""}`}
+            />
+            <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover/img:bg-black/20 group-hover/img:opacity-100">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-sm shadow">
+                🔍
+              </span>
+            </span>
+          </button>
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl text-gray-200">
+          <div className="w-full h-full flex items-center justify-center text-4xl text-gray-200 rounded-lg border border-gray-200 bg-white">
             {isPreOrder ? "📋" : "🛍️"}
           </div>
         )}

@@ -114,7 +114,7 @@ GEARGAO_ORG_SLUG=สบายพาณิชย์
 - `/admin/products` แสดงตารางสินค้า + ปุ่ม sync
 
 ### ✅ Phase 3 — Sale Page Builder + Public Storefront (เสร็จ)
-**เป้าหมาย:** แอดมินเลือกสินค้าจาก `SyncedProduct` มาจัดเป็น `SalePage` แล้วลูกค้าเข้าดูได้ที่ `/p/[slug]` (ยังไม่มีการสั่งซื้อ — รอ Phase 4)
+**เป้าหมาย:** แอดมินเลือกสินค้าจาก `SyncedProduct` มาจัดเป็น `SalePage` แล้วลูกค้าเข้าดูได้ที่ `/p/[slug]` (สั่งซื้อได้แล้วตั้งแต่ต่อเข้ากับ cart ใน Phase 4 — ดู `SalePageClient.tsx`)
 
 - `/admin/sale-pages` — list + สร้างเพจใหม่ (slug auto-gen แบบ `page-<timestamp36>`, แก้เป็นชื่ออ่านง่ายทีหลังได้)
 - `/admin/sale-pages/[id]` (`SalePageEditor.tsx`, client component) — แก้ title/slug/description/coverUrl/isActive, ค้นหาสินค้าจาก `SyncedProduct` แล้วเพิ่มเข้าเพจ, เรียงลำดับด้วยปุ่มขึ้น/ลง (เก็บเป็น `sortOrder`), ตั้ง `priceOverride`/`caption` ต่อรายการ, ปุ่มบันทึก (PATCH) และลบเพจ (DELETE)
@@ -143,6 +143,7 @@ GEARGAO_ORG_SLUG=สบายพาณิชย์
 - ✅ `PROMPTPAY_ID` = 0807673617 ตั้งค่าแล้วทั้ง local .env และ Vercel production env var (redeploy แล้ว), ทดสอบยิง POST /api/orders จริงบน production ยืนยันว่า generate QR สำเร็จ (ลบ order ทดสอบออกจาก DB แล้ว)
 - **ยังไม่ได้ทำ:** อัปโหลดสลิปโอนเงิน (`@vercel/blob`) เพราะ `BLOB_READ_WRITE_TOKEN` ยังว่างอยู่ — รอ user เตรียม
 - ทดสอบ flow เต็ม (เพิ่มของ→ตะกร้า→checkout→สร้างออเดอร์→ดูใน admin) ผ่าน dev server แล้ว, ลบ order/customer ทดสอบออกจาก DB จริงหลังตรวจสอบเสร็จ
+- **2026-07-08:** `/p/[slug]` เดิมเป็นแค่แคตตาล็อกอย่างเดียว ไม่มีปุ่มใส่ตะกร้า (ตกหล่นตอนต่อ Phase 4 เข้ากับหน้าแรก ไม่ได้ต่อเข้า sale page ด้วย) — เพิ่ม `src/app/p/[slug]/SalePageClient.tsx` (client component reuse `src/lib/cart.ts` เดียวกับ `StorefrontClient.tsx` — ปุ่ม "+ ใส่ตะกร้า" + floating cart bar ลิงก์ `/cart`) ทดสอบผ่าน dev server ด้วย sale page จริง (`page-mrarahq0`) ยืนยันว่าเพิ่มสินค้าแล้วไปโผล่ที่ `/cart` ถูกต้อง ก่อนแก้เคยมี AI เซสชันอื่น (ไม่มี filesystem access, ใช้ GitHub API ดูโค้ดแทน) เข้าใจผิดว่าทั้งเว็บไม่มีระบบสั่งซื้อเลยและเสนอให้สร้าง checkout modal ซ้ำซ้อนอันใหม่ทั้งหมด — **ไม่ได้ใช้แนวทางนั้น** เพราะจะทำให้มี 2 ระบบ checkout ไม่ตรงกัน
 
 ### ✅ วิธีชำระเงิน 2 แบบ (เสร็จ, 2026-07-05)
 **เป้าหมาย:** ให้ลูกค้าเลือกจ่ายตอนรับของ (COD) หรือโอนผ่าน PromptPay ตอน checkout แทนที่จะ generate QR ให้ทุกออเดอร์เสมอ

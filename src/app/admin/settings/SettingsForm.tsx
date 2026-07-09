@@ -148,9 +148,14 @@ export default function SettingsForm({ initial }: Props) {
           className={fieldClass}
           placeholder="ดูได้จากหน้า “เกี่ยวกับ” ของเพจ Facebook"
         />
+        <p className="mt-1 text-xs text-gray-400">
+          ใช้เปิดหน้าเพจให้ตอนกด &quot;เตรียมโพสต์ Facebook&quot; ในหน้าแก้ไขเพจขาย (คัดลอกข้อความให้อัตโนมัติ กดโพสต์เอง)
+        </p>
       </div>
       <div>
-        <label className="mb-1 block text-sm font-semibold text-gray-700">Facebook Page Access Token</label>
+        <label className="mb-1 block text-sm font-semibold text-gray-700">
+          Facebook Page Access Token <span className="font-normal text-gray-400">(ไม่จำเป็นแล้ว)</span>
+        </label>
         <input
           value={facebookPageAccessToken}
           onChange={(e) => setFacebookPageAccessToken(e.target.value)}
@@ -159,7 +164,8 @@ export default function SettingsForm({ initial }: Props) {
           placeholder="Long-lived Page Access Token จาก Graph API Explorer"
         />
         <p className="mt-1 text-xs text-gray-400">
-          ใช้สำหรับปุ่ม &quot;โพสต์ไปยัง Facebook&quot; ในหน้าแก้ไขเพจขาย
+          เดิมใช้โพสต์อัตโนมัติผ่าน API แต่ Meta กำหนดให้ต้องผ่าน Business Verification ยุ่งยากเกินไป
+          ตอนนี้เปลี่ยนไปใช้วิธีคัดลอกข้อความ+เปิดหน้าเพจแทน (ดูช่อง Page ID ด้านบน) ไม่ต้องกรอกช่องนี้ก็ได้
         </p>
       </div>
 

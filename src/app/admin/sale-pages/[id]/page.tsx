@@ -9,13 +9,14 @@ export default async function EditSalePagePage({
 }) {
   const { id } = await params;
 
-  const [salePage, products, facebookPosts] = await Promise.all([
+  const [salePage, products, facebookPosts, settings] = await Promise.all([
     prisma.salePage.findUnique({
       where: { id },
       include: { items: { include: { product: true }, orderBy: { sortOrder: "asc" } } },
     }),
     prisma.syncedProduct.findMany({ orderBy: { name: "asc" } }),
     prisma.facebookPost.findMany({ where: { salePageId: id }, orderBy: { createdAt: "desc" } }),
+    prisma.appSettings.findUnique({ where: { id: "singleton" } }),
   ]);
 
   if (!salePage) notFound();
@@ -61,6 +62,8 @@ export default async function EditSalePagePage({
         error: p.error,
         createdAt: p.createdAt.toISOString(),
       }))}
+      facebookPageId={settings?.facebookPageId ?? null}
+      storeUrl={process.env.NEXT_PUBLIC_APP_URL || ""}
     />
   );
 }

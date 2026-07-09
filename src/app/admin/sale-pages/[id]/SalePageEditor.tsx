@@ -44,11 +44,15 @@ export default function SalePageEditor({
   initialItems,
   allProducts,
   facebookPosts,
+  facebookPageId,
+  storeUrl,
 }: {
   salePage: SalePageMeta;
   initialItems: Item[];
   allProducts: Product[];
   facebookPosts: FacebookPostRecord[];
+  facebookPageId: string | null;
+  storeUrl: string;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(salePage.title);
@@ -60,9 +64,10 @@ export default function SalePageEditor({
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [posts, setPosts] = useState<FacebookPostRecord[]>(facebookPosts);
+  const [posts] = useState<FacebookPostRecord[]>(facebookPosts);
   const [posting, setPosting] = useState(false);
   const [postMessage, setPostMessage] = useState<string | null>(null);
+  const [preparedMessage, setPreparedMessage] = useState<string | null>(null);
 
   const selectedIds = useMemo(() => new Set(items.map((it) => it.productId)), [items]);
 
@@ -140,33 +145,29 @@ export default function SalePageEditor({
   }
 
   async function handlePostToFacebook() {
+    if (!facebookPageId) {
+      setPostMessage("ยังไม่ได้ตั้งค่า Facebook Page ID ที่หน้าตั้งค่า");
+      return;
+    }
     setPosting(true);
     setPostMessage(null);
+    const pageUrl = `${storeUrl}/p/${slug}`;
+    const message = [title, description, `ดูสินค้าทั้งหมด: ${pageUrl}`].filter(Boolean).join("\n\n");
+    setPreparedMessage(message);
+    let copied = false;
     try {
-      const res = await fetch(`/api/admin/sale-pages/${salePage.id}/facebook-post`, {
-        method: "POST",
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setPostMessage(data.error ?? "โพสต์ไม่สำเร็จ");
-      } else {
-        setPostMessage("โพสต์ไปยัง Facebook เรียบร้อย");
-        setPosts((prev) => [
-          {
-            id: data.post.id,
-            status: data.post.status,
-            permalink: data.post.permalink,
-            error: data.post.error,
-            createdAt: new Date().toISOString(),
-          },
-          ...prev,
-        ]);
-      }
+      await navigator.clipboard.writeText(message);
+      copied = true;
     } catch {
-      setPostMessage("เชื่อมต่อไม่ได้");
-    } finally {
-      setPosting(false);
+      copied = false;
     }
+    window.open(`https://www.facebook.com/${facebookPageId}`, "_blank", "noopener,noreferrer");
+    setPostMessage(
+      copied
+        ? 'คัดลอกข้อความแล้ว! ในแท็บเพจที่เปิดขึ้น กด "เขียนโพสต์" แล้ววาง (Ctrl+V) แล้วกดโพสต์เองได้เลย'
+        : "คัดลอกอัตโนมัติไม่สำเร็จ — คัดลอกข้อความจากกล่องด้านล่างเอง แล้ววางในเพจที่เปิดขึ้นมาได้เลย"
+    );
+    setPosting(false);
   }
 
   async function handleDelete() {
@@ -254,7 +255,7 @@ export default function SalePageEditor({
               disabled={posting}
               className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
-              {posting ? "กำลังโพสต์..." : "โพสต์ไปยัง Facebook"}
+              {posting ? "กำลังเตรียม..." : "เตรียมโพสต์ Facebook"}
             </button>
           </div>
         </div>
@@ -262,6 +263,18 @@ export default function SalePageEditor({
           <p className="mt-2 text-xs text-amber-600">
             เพจนี้ยังไม่ได้เผยแพร่ — บันทึกลิงก์ /p/{slug} ไว้ก่อนโพสต์ ลูกค้าจะเข้าดูไม่ได้จนกว่าจะติ๊กเผยแพร่และกดบันทึก
           </p>
+        )}
+        {preparedMessage && (
+          <div className="mt-3">
+            <p className="mb-1 text-xs text-gray-500">ข้อความที่เตรียมไว้ (เลือกทั้งหมด + คัดลอกเองได้ถ้าจำเป็น):</p>
+            <textarea
+              readOnly
+              value={preparedMessage}
+              rows={4}
+              onFocus={(e) => e.target.select()}
+              className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-xs"
+            />
+          </div>
         )}
         {posts.length > 0 && (
           <div className="mt-3 divide-y text-sm">
