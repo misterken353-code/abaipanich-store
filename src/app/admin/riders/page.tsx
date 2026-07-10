@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import RidersManager from "./RidersManager";
+import ApplicationsPanel from "./ApplicationsPanel";
 
 export default async function AdminRidersPage() {
-  const [ridersRaw, recentMessages] = await Promise.all([
+  const [ridersRaw, recentMessages, pendingApplications] = await Promise.all([
     prisma.rider.findMany({
       orderBy: { createdAt: "desc" },
       include: {
@@ -24,7 +25,20 @@ export default async function AdminRidersPage() {
       orderBy: { createdAt: "desc" },
       take: 20,
     }),
+    prisma.riderApplication.findMany({
+      where: { status: "PENDING" },
+      orderBy: { createdAt: "asc" },
+    }),
   ]);
+
+  const applications = pendingApplications.map((a) => ({
+    id: a.id,
+    name: a.name,
+    phone: a.phone,
+    idCardImage: a.idCardImage,
+    note: a.note,
+    createdAt: a.createdAt.toISOString(),
+  }));
 
   const riders = ridersRaw.map((r) => {
     const rated = r.orders.filter((o) => o.riderRating != null);
@@ -57,8 +71,22 @@ export default async function AdminRidersPage() {
         เพิ่มคนขับแล้วกด &quot;คัดลอกลิงก์&quot; ส่งลิงก์ให้คนขับทาง LINE — คนขับเปิดลิงก์นั้นแล้วจะเห็นงานส่งที่ว่างอยู่
         กดรับงานเอง (แข่งกันแบบ Lalamove/Grab) และกดแจ้งจัดส่งสำเร็จได้เองโดยไม่ต้องล็อกอิน
       </p>
+      <p className="mb-4 text-sm text-gray-500">
+        รับสมัครคนขับใหม่: แชร์ลิงก์หน้าสมัคร{" "}
+        <a
+          href="/apply-rider"
+          target="_blank"
+          className="font-semibold text-green-700 underline"
+        >
+          {process.env.NEXT_PUBLIC_APP_URL ?? ""}/apply-rider
+        </a>{" "}
+        — ผู้สมัครกรอกชื่อ เบอร์โทร แนบรูปบัตรประชาชน แล้วเพิ่มเพื่อน LINE OA มาคุยงานต่อ
+      </p>
 
-      <RidersManager riders={riders} />
+      <div className="space-y-6">
+        <ApplicationsPanel applications={applications} />
+        <RidersManager riders={riders} />
+      </div>
 
       <div className="mt-6 max-w-xl rounded-xl border border-gray-200 bg-white p-5">
         <h2 className="mb-3 font-semibold text-gray-700">ข้อความล่าสุดที่มีคนทักบอท LINE</h2>

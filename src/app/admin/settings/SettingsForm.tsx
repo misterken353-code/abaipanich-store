@@ -7,6 +7,7 @@ interface Values {
   lineChannelSecret: string;
   lineChannelAccessToken: string;
   lineShopUserId: string;
+  lineOaUrl: string;
   promptPayId: string;
   facebookPageId: string;
   facebookPageAccessToken: string;
@@ -27,6 +28,7 @@ export default function SettingsForm({ initial }: Props) {
   const [lineChannelSecret, setLineChannelSecret] = useState(initial.lineChannelSecret);
   const [lineChannelAccessToken, setLineChannelAccessToken] = useState(initial.lineChannelAccessToken);
   const [lineShopUserId, setLineShopUserId] = useState(initial.lineShopUserId);
+  const [lineOaUrl, setLineOaUrl] = useState(initial.lineOaUrl);
   const [promptPayId, setPromptPayId] = useState(initial.promptPayId);
   const [facebookPageId, setFacebookPageId] = useState(initial.facebookPageId);
   const [facebookPageAccessToken, setFacebookPageAccessToken] = useState(initial.facebookPageAccessToken);
@@ -46,6 +48,7 @@ export default function SettingsForm({ initial }: Props) {
     setLineChannelSecret(savedValues.lineChannelSecret);
     setLineChannelAccessToken(savedValues.lineChannelAccessToken);
     setLineShopUserId(savedValues.lineShopUserId);
+    setLineOaUrl(savedValues.lineOaUrl);
     setPromptPayId(savedValues.promptPayId);
     setFacebookPageId(savedValues.facebookPageId);
     setFacebookPageAccessToken(savedValues.facebookPageAccessToken);
@@ -84,6 +87,7 @@ export default function SettingsForm({ initial }: Props) {
         lineChannelSecret: lineChannelSecret.trim(),
         lineChannelAccessToken: lineChannelAccessToken.trim(),
         lineShopUserId: lineShopUserId.trim(),
+        lineOaUrl: lineOaUrl.trim(),
         promptPayId: promptPayId.trim(),
         facebookPageId: facebookPageId.trim(),
         facebookPageAccessToken: facebookPageAccessToken.trim(),
@@ -97,6 +101,7 @@ export default function SettingsForm({ initial }: Props) {
           lineChannelSecret: next.lineChannelSecret || null,
           lineChannelAccessToken: next.lineChannelAccessToken || null,
           lineShopUserId: next.lineShopUserId || null,
+          lineOaUrl: next.lineOaUrl || null,
           promptPayId: next.promptPayId || null,
           facebookPageId: next.facebookPageId || null,
           facebookPageAccessToken: next.facebookPageAccessToken || null,
@@ -158,6 +163,20 @@ export default function SettingsForm({ initial }: Props) {
         />
         <p className="mt-1 text-xs text-gray-400">
           ดูวิธีหา User ID ได้จากตาราง &quot;ข้อความล่าสุด&quot; ด้านล่าง — ทักบอทของคุณ 1 ข้อความแล้วรีเฟรชหน้านี้
+        </p>
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-semibold text-gray-700">ลิงก์เพิ่มเพื่อน LINE OA</label>
+        <input
+          value={lineOaUrl}
+          onChange={(e) => setLineOaUrl(e.target.value)}
+          disabled={!editing}
+          className={fieldClass}
+          placeholder="เช่น https://lin.ee/xxxxxxx"
+        />
+        <p className="mt-1 text-xs text-gray-400">
+          ดูได้จาก LINE Official Account Manager &gt; เพิ่มเพื่อน &gt; คัดลอก URL — ใช้เป็นปุ่ม
+          &quot;เพิ่มเพื่อน&quot; ในหน้าสมัครม้าเร็ว (/apply-rider) หลังผู้สมัครส่งใบสมัครสำเร็จ
         </p>
       </div>
       <div>

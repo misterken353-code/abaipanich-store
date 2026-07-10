@@ -175,6 +175,29 @@ model Rider {
   orders Order[]
 }
 
+// ใบสมัครม้าเร็ว — คนทั่วไปสมัครผ่านหน้า /apply-rider (แนบรูปบัตรประชาชน)
+// แอดมินอนุมัติแล้วระบบสร้าง Rider ให้อัตโนมัติ คุยงานต่อทาง LINE OA
+enum RiderApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model RiderApplication {
+  id          String                 @id @default(cuid())
+  name        String
+  phone       String
+  idCardImage String                 @db.Text // data URL (JPEG base64 บีบอัดฝั่ง client) — ยังไม่มี Blob storage
+  note        String?
+  status      RiderApplicationStatus @default(PENDING)
+  riderId     String? // Rider ที่สร้างขึ้นตอนอนุมัติ
+  reviewedAt  DateTime?
+  createdAt   DateTime               @default(now())
+
+  @@index([status])
+  @@index([phone])
+}
+
 model OrderItem {
   id         String   @id @default(cuid())
   orderId    String
@@ -232,6 +255,7 @@ model AppSettings {
   lineChannelSecret      String? @db.Text
   lineChannelAccessToken String? @db.Text
   lineShopUserId         String? // userId ของแอดมิน/กลุ่มร้าน ที่จะ push แจ้งออเดอร์ใหม่/โลเคชั่นเข้าไป
+  lineOaUrl              String? // ลิงก์เพิ่มเพื่อน LINE OA (เช่น https://lin.ee/xxxx) — ใช้ในหน้าสมัครม้าเร็ว
   storeLat               Float?  // พิกัดร้าน ใช้คำนวณค่าส่งม้าเร็วตามระยะทางจริง
   storeLng               Float?
   updatedAt              DateTime @updatedAt

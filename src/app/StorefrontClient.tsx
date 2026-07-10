@@ -306,6 +306,13 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
           <p className="mt-4 text-emerald-300/70 text-xs">
             🕐 สินค้า Pre-order นัดรับ ประมาณ 2–5 วัน — ไม่ได้ของภายใน 5 วัน คืนเงินเต็มจำนวนที่ร้าน
           </p>
+
+          <a
+            href="/apply-rider"
+            className="mt-4 inline-block text-amber-200/90 text-xs font-semibold underline underline-offset-4 hover:text-amber-100"
+          >
+            🏍️ รับสมัครม้าเร็ว (คนขับส่งของ) — สมัครที่นี่
+          </a>
         </div>
       </footer>
 

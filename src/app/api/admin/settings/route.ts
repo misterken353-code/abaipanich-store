@@ -21,6 +21,7 @@ export async function PATCH(req: NextRequest) {
     lineChannelSecret,
     lineChannelAccessToken,
     lineShopUserId,
+    lineOaUrl,
     promptPayId,
     facebookPageId,
     facebookPageAccessToken,
@@ -30,6 +31,7 @@ export async function PATCH(req: NextRequest) {
     lineChannelSecret?: string | null;
     lineChannelAccessToken?: string | null;
     lineShopUserId?: string | null;
+    lineOaUrl?: string | null;
     promptPayId?: string | null;
     facebookPageId?: string | null;
     facebookPageAccessToken?: string | null;
@@ -44,6 +46,7 @@ export async function PATCH(req: NextRequest) {
       lineChannelSecret: lineChannelSecret || null,
       lineChannelAccessToken: lineChannelAccessToken || null,
       lineShopUserId: lineShopUserId || null,
+      lineOaUrl: lineOaUrl || null,
       promptPayId: promptPayId || null,
       facebookPageId: facebookPageId || null,
       facebookPageAccessToken: facebookPageAccessToken || null,
@@ -54,6 +57,7 @@ export async function PATCH(req: NextRequest) {
       ...(lineChannelSecret !== undefined ? { lineChannelSecret: lineChannelSecret || null } : {}),
       ...(lineChannelAccessToken !== undefined ? { lineChannelAccessToken: lineChannelAccessToken || null } : {}),
       ...(lineShopUserId !== undefined ? { lineShopUserId: lineShopUserId || null } : {}),
+      ...(lineOaUrl !== undefined ? { lineOaUrl: lineOaUrl || null } : {}),
       ...(promptPayId !== undefined ? { promptPayId: promptPayId || null } : {}),
       ...(facebookPageId !== undefined ? { facebookPageId: facebookPageId || null } : {}),
       ...(facebookPageAccessToken !== undefined
