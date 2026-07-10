@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import RidersManager from "./RidersManager";
 import ApplicationsPanel from "./ApplicationsPanel";
+import RecruitShareCard from "./RecruitShareCard";
 
 export default async function AdminRidersPage() {
   const [ridersRaw, recentMessages, pendingApplications] = await Promise.all([
@@ -71,19 +72,8 @@ export default async function AdminRidersPage() {
         เพิ่มคนขับแล้วกด &quot;คัดลอกลิงก์&quot; ส่งลิงก์ให้คนขับทาง LINE — คนขับเปิดลิงก์นั้นแล้วจะเห็นงานส่งที่ว่างอยู่
         กดรับงานเอง (แข่งกันแบบ Lalamove/Grab) และกดแจ้งจัดส่งสำเร็จได้เองโดยไม่ต้องล็อกอิน
       </p>
-      <p className="mb-4 text-sm text-gray-500">
-        รับสมัครคนขับใหม่: แชร์ลิงก์หน้าสมัคร{" "}
-        <a
-          href="/apply-rider"
-          target="_blank"
-          className="font-semibold text-green-700 underline"
-        >
-          {process.env.NEXT_PUBLIC_APP_URL ?? ""}/apply-rider
-        </a>{" "}
-        — ผู้สมัครกรอกชื่อ เบอร์โทร แนบรูปบัตรประชาชน แล้วเพิ่มเพื่อน LINE OA มาคุยงานต่อ
-      </p>
-
       <div className="space-y-6">
+        <RecruitShareCard appUrl={process.env.NEXT_PUBLIC_APP_URL ?? ""} />
         <ApplicationsPanel applications={applications} />
         <RidersManager riders={riders} />
       </div>
