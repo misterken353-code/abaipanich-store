@@ -8,6 +8,8 @@ import DoneButton from "./DoneButton";
 import StockArrivedButton from "./StockArrivedButton";
 import CustomerActions from "./CustomerActions";
 import PrintButton from "./PrintButton";
+import DeliveryStageButtons from "./DeliveryStageButtons";
+import type { DeliveryStageValue, ShippingMethodValue } from "@/lib/deliveryStage";
 
 const baht = (n: number) => n.toLocaleString("th-TH");
 
@@ -64,6 +66,15 @@ export default async function AdminOrderDetailPage({
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5">
         <h2 className="mb-3 font-semibold text-gray-700">รับออเดอร์</h2>
         <AcknowledgeButton orderId={order.id} acknowledgedAt={order.acknowledgedAt?.toISOString() ?? null} />
+      </div>
+
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5">
+        <h2 className="mb-3 font-semibold text-gray-700">ขั้นการจัดส่ง (ลูกค้าติดตามได้)</h2>
+        <DeliveryStageButtons
+          orderId={order.id}
+          current={order.deliveryStage as DeliveryStageValue | null}
+          shippingMethod={order.shippingMethod as ShippingMethodValue}
+        />
       </div>
 
       {order.hasPreOrder && (

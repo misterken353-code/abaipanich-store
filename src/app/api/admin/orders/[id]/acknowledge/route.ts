@@ -20,7 +20,11 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     return NextResponse.json({ ok: true, notified: false, alreadyAcknowledged: true });
   }
 
-  await prisma.order.update({ where: { id }, data: { acknowledgedAt: new Date() } });
+  // กด "รับออเดอร์" = เข้าขั้นแรกของการติดตามจัดส่งอัตโนมัติ (ลูกค้าเห็นในหน้า /order)
+  await prisma.order.update({
+    where: { id },
+    data: { acknowledgedAt: new Date(), deliveryStage: "RECEIVED" },
+  });
 
   let notified = false;
   if (order.customer.lineUserId) {

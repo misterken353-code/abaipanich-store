@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { getAddFriendUrl } from "@/lib/lineOa";
 import RateRiderForm from "./RateRiderForm";
 import LineAddFriend from "./LineAddFriend";
+import OrderTracker from "./OrderTracker";
+import type { DeliveryStageValue, ShippingMethodValue } from "@/lib/deliveryStage";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING_PAYMENT: "รอชำระเงิน",
@@ -60,6 +62,12 @@ export default async function OrderConfirmationPage({
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+        <OrderTracker
+          stage={order.deliveryStage as DeliveryStageValue | null}
+          shippingMethod={order.shippingMethod as ShippingMethodValue}
+          cancelled={order.status === "CANCELLED"}
+        />
+
         <LineAddFriend addUrl={addFriendUrl} qrDataUrl={addFriendQr} storageKey={order.orderNo} />
 
         {order.hasPreOrder && (

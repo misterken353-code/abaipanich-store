@@ -106,6 +106,15 @@ enum OrderStatus {
   CANCELLED
 }
 
+// ขั้นการจัดส่งที่ลูกค้าเห็นในหน้าติดตามออเดอร์ (แยกจาก status ที่เกี่ยวกับการชำระเงิน)
+// null = สั่งซื้อสำเร็จ รอร้านรับออเดอร์
+enum DeliveryStage {
+  RECEIVED   // ร้านรับออเดอร์แล้ว (ตั้งอัตโนมัติเมื่อแอดมินกด "รับออเดอร์")
+  PREPARING  // กำลังจัดเตรียมสินค้า
+  DELIVERING // กำลังจัดส่ง / พร้อมให้มารับ
+  DELIVERED  // จัดส่งสำเร็จ (ตั้งอัตโนมัติเมื่อคนขับกด "จัดส่งสำเร็จ")
+}
+
 enum ShippingMethod {
   PICKUP      // รับเองหน้าร้าน
   MOTORCYCLE  // เรียกม้าเร็วจัดส่ง — ค่าส่งจ่ายแยกให้คนขับ ไม่รวมใน totalAmount/QR
@@ -125,6 +134,7 @@ model Order {
   salePageId      String?
   salePage        SalePage?      @relation(fields: [salePageId], references: [id])
   status          OrderStatus    @default(PENDING_PAYMENT)
+  deliveryStage   DeliveryStage? // ขั้นการจัดส่งที่ลูกค้าติดตามได้ (null = รอร้านรับออเดอร์)
   totalAmount     Decimal
   shippingMethod  ShippingMethod @default(PICKUP)
   shippingAddress String?
