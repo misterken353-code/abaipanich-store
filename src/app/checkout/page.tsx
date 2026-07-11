@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cartTotal, getCart, saveCart, type CartItem } from "@/lib/cart";
 
 type ShippingMethod = "PICKUP" | "MOTORCYCLE" | "FREIGHT";
@@ -103,9 +103,11 @@ export default function CheckoutPage() {
     };
   }, [shippingMethod, location]);
 
-  async function handlePhoneBlur() {
-    const p = phone.trim();
-    if (p.length < 9) return;
+  const lookedUpPhoneRef = useRef<string | null>(null);
+
+  async function lookupPhone(p: string) {
+    if (p.length < 9 || lookedUpPhoneRef.current === p) return;
+    lookedUpPhoneRef.current = p;
     setCheckingPhone(true);
     try {
       const res = await fetch(`/api/customers/lookup?phone=${encodeURIComponent(p)}`);
@@ -120,9 +122,25 @@ export default function CheckoutPage() {
       }
     } catch {
       // เงียบไว้ — ไม่ใช่ error ร้ายแรง แค่ prefill ไม่สำเร็จ ลูกค้ากรอกเองได้ตามปกติ
+      lookedUpPhoneRef.current = null; // เผื่อ error ชั่วคราว ให้ลองใหม่ได้ตอนพิมพ์ต่อ/blur ครั้งหน้า
     } finally {
       setCheckingPhone(false);
     }
+  }
+
+  // เช็คลูกค้าเก่าทันทีที่พิมพ์เบอร์ครบ (ไม่ต้องรอ blur/แตะช่องอื่น) — ลูกค้าเก่าได้ข้อมูลเดิมมาแบบไม่ต้องพิมพ์ซ้ำ
+  useEffect(() => {
+    const p = phone.trim();
+    if (p.length < 9) return;
+    const timer = setTimeout(() => {
+      lookupPhone(p);
+    }, 400);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phone]);
+
+  async function handlePhoneBlur() {
+    await lookupPhone(phone.trim());
   }
 
   function shareLocation() {
