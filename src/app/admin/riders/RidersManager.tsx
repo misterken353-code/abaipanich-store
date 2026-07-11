@@ -9,6 +9,7 @@ interface Rider {
   phone: string;
   lineUserId: string | null;
   isActive: boolean;
+  isOnline: boolean;
   accessToken: string;
   commissionPerDelivery: number;
   avgRating: number | null;
@@ -188,7 +189,18 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
           <tbody>
             {riders.map((r) => (
               <tr key={r.id} className="border-t border-gray-100">
-                <td className="px-4 py-2 font-medium">{r.name}</td>
+                <td className="px-4 py-2 font-medium">
+                  <div className="flex items-center gap-2">
+                    <span>{r.name}</span>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                        r.isOnline ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"
+                      }`}
+                    >
+                      {r.isOnline ? "🟢 สแตนบาย" : "⚫ ออฟไลน์"}
+                    </span>
+                  </div>
+                </td>
                 <td className="px-4 py-2 text-gray-500">{r.phone}</td>
                 <td className="px-4 py-2 text-gray-500">
                   {r.lineUserId ? "✓ ผูกแล้ว" : <span className="text-gray-300">ยังไม่ผูก</span>}

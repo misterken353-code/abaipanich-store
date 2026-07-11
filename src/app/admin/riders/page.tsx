@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { isRiderOnline } from "@/lib/riderStatus";
 import RidersManager from "./RidersManager";
 import ApplicationsPanel from "./ApplicationsPanel";
 import RecruitShareCard from "./RecruitShareCard";
@@ -57,6 +58,7 @@ export default async function AdminRidersPage() {
       lineUserId: r.lineUserId,
       accessToken: r.accessToken,
       isActive: r.isActive,
+      isOnline: isRiderOnline(r),
       commissionPerDelivery: Number(r.commissionPerDelivery),
       avgRating,
       ratedCount: rated.length,

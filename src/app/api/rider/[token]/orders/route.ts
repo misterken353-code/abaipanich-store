@@ -10,6 +10,11 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: str
     return NextResponse.json({ error: "ไม่พบบัญชีคนขับ หรือถูกปิดใช้งาน" }, { status: 404 });
   }
 
+  // heartbeat: ถ้าคนขับสแตนบายอยู่ อัปเดตเวลาล่าสุดที่เห็น (poll ทุก ~15 วิ) เพื่อคงสถานะ "พร้อมรับงาน"
+  if (rider.isOnline) {
+    await prisma.rider.update({ where: { id: rider.id }, data: { lastSeenAt: new Date() } });
+  }
+
   const [available, mine, history, unsettled] = await Promise.all([
     prisma.order.findMany({
       where: {
@@ -50,7 +55,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: str
     .reduce((s, o) => s + Number(o.totalAmount), 0);
 
   return NextResponse.json({
-    rider: { name: rider.name, avgRating, ratedCount: rated.length, unsettledCommission, unsettledCod },
+    rider: { name: rider.name, isOnline: rider.isOnline, avgRating, ratedCount: rated.length, unsettledCommission, unsettledCod },
     available,
     mine,
     history,

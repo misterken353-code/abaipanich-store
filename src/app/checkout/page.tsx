@@ -42,6 +42,8 @@ export default function CheckoutPage() {
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [deliveryFeeEstimate, setDeliveryFeeEstimate] = useState<{ distanceKm: number; fee: number } | null>(null);
+  const [riderStatus, setRiderStatus] = useState<{ available: boolean; onlineCount: number; freeCount: number } | null>(null);
+  const [waitRider, setWaitRider] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,6 +63,26 @@ export default function CheckoutPage() {
     setLocation(null);
     setLocationError(null);
     setDeliveryFeeEstimate(null);
+    setWaitRider(false);
+  }, [shippingMethod]);
+
+  // เลือกม้าเร็ว → เช็คว่ามีคนขับสแตนบายพร้อมรับงานไหม (ถ้าไม่มี จะเสนอให้รอ หรือเปลี่ยนเป็นรับเองหน้าร้าน)
+  useEffect(() => {
+    if (shippingMethod !== "MOTORCYCLE") {
+      setRiderStatus(null);
+      return;
+    }
+    let cancelled = false;
+    setRiderStatus(null);
+    fetch("/api/riders/status", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setRiderStatus(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [shippingMethod]);
 
   // พอแชร์โลเคชั่นสำเร็จสำหรับม้าเร็ว ลองประเมินค่าส่งจริงตามระยะทาง (ถ้าร้านตั้งพิกัดไว้แล้ว)
@@ -272,8 +294,43 @@ export default function CheckoutPage() {
               ))}
             </div>
 
+            {shippingMethod === "MOTORCYCLE" && riderStatus && !riderStatus.available && !waitRider && (
+              <div className="mt-3 rounded-xl border-2 border-red-300 bg-red-50 p-4">
+                <p className="text-sm font-bold text-red-700">
+                  {riderStatus.onlineCount === 0
+                    ? "😴 ตอนนี้ยังไม่มีม้าเร็วสแตนบายรับงาน"
+                    : "🛵 ม้าเร็ววิ่งงานเต็มทุกคันอยู่ตอนนี้"}
+                </p>
+                <p className="mt-1 text-xs text-red-600">
+                  คุณสามารถรอให้ม้าเร็วว่าง (สั่งแบบม้าเร็วต่อได้ ทางร้านจะจัดส่งให้เมื่อมีคนขับ)
+                  หรือเปลี่ยนเป็นมารับเองหน้าร้าน
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShippingMethod("PICKUP")}
+                    className="rounded-full bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700"
+                  >
+                    🏬 เปลี่ยนเป็นรับเองหน้าร้าน
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWaitRider(true)}
+                    className="rounded-full border border-red-400 bg-white px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50"
+                  >
+                    ⏳ รอม้าเร็ว (สั่งต่อ)
+                  </button>
+                </div>
+              </div>
+            )}
+
             {shippingMethod === "MOTORCYCLE" && (
               <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                {riderStatus?.available && (
+                  <p className="mb-2 text-xs font-semibold text-green-700">
+                    ✅ มีม้าเร็วพร้อมรับงาน {riderStatus.freeCount} คน
+                  </p>
+                )}
                 <p className="text-xs text-amber-700 font-semibold">
                   ⚠️ ค่าส่งม้าเร็วเป็นค่าใช้จ่ายเพิ่มเติม ไม่รวมอยู่ในยอดชำระค่าสินค้า — ชำระค่าส่งให้คนขับโดยตรง
                 </p>

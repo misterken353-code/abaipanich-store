@@ -33,6 +33,7 @@ interface HistoryOrder {
 
 interface RiderStats {
   name: string;
+  isOnline: boolean;
   avgRating: number | null;
   ratedCount: number;
   unsettledCommission: number;
@@ -51,6 +52,7 @@ export default function RiderDashboard({ token }: { token: string }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [locationShared, setLocationShared] = useState(false);
+  const [togglingStandby, setTogglingStandby] = useState(false);
   const lastSentRef = useRef(0);
 
   const load = useCallback(async () => {
@@ -100,6 +102,28 @@ export default function RiderDashboard({ token }: { token: string }) {
     );
     return () => navigator.geolocation.clearWatch(watchId);
   }, [token]);
+
+  async function toggleStandby() {
+    if (!rider) return;
+    setTogglingStandby(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/rider/${token}/standby`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ online: !rider.isOnline }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setMessage(data.error ?? "เปลี่ยนสถานะไม่สำเร็จ");
+      }
+      await load();
+    } catch {
+      setMessage("เชื่อมต่อไม่ได้");
+    } finally {
+      setTogglingStandby(false);
+    }
+  }
 
   async function claim(orderId: string) {
     setBusyId(orderId);
@@ -181,6 +205,34 @@ export default function RiderDashboard({ token }: { token: string }) {
           </p>
         )}
 
+        <section
+          className={`rounded-2xl border-2 p-4 ${
+            rider?.isOnline ? "border-green-500 bg-green-50" : "border-gray-200 bg-white"
+          }`}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className={`font-bold ${rider?.isOnline ? "text-green-700" : "text-gray-600"}`}>
+                {rider?.isOnline ? "🟢 สแตนบายรับงานอยู่" : "⚫ พักรับงาน (ออฟไลน์)"}
+              </p>
+              <p className="mt-0.5 text-xs text-gray-500">
+                {rider?.isOnline
+                  ? "คุณจะเห็นงานที่ว่างและรับงานได้ — เปิดหน้านี้ค้างไว้"
+                  : "กดปุ่มเพื่อเริ่มรับงาน ลูกค้าถึงจะเรียกม้าเร็วได้"}
+              </p>
+            </div>
+            <button
+              onClick={toggleStandby}
+              disabled={togglingStandby || !rider}
+              className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50 ${
+                rider?.isOnline ? "bg-gray-500 hover:bg-gray-600" : "bg-green-600 hover:bg-green-700"
+              }`}
+            >
+              {togglingStandby ? "..." : rider?.isOnline ? "พักรับงาน" : "เริ่มรับงาน"}
+            </button>
+          </div>
+        </section>
+
         <section>
           <h2 className="font-bold text-gray-700 mb-3">งานของฉัน ({mine.length})</h2>
           {mine.length === 0 ? (
@@ -196,7 +248,11 @@ export default function RiderDashboard({ token }: { token: string }) {
 
         <section>
           <h2 className="font-bold text-gray-700 mb-3">งานที่ว่าง ({available.length})</h2>
-          {loading ? (
+          {!rider?.isOnline ? (
+            <p className="rounded-xl bg-gray-50 border border-gray-200 px-4 py-3 text-sm text-gray-500">
+              กด &quot;เริ่มรับงาน&quot; ด้านบนก่อน เพื่อสแตนบายและเห็นงานที่ว่าง
+            </p>
+          ) : loading ? (
             <p className="text-sm text-gray-400">กำลังโหลด...</p>
           ) : available.length === 0 ? (
             <p className="text-sm text-gray-400">ยังไม่มีงานว่างตอนนี้</p>

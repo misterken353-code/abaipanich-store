@@ -176,6 +176,8 @@ model Rider {
   lineUserId            String?
   accessToken           String   @unique @default(cuid())
   isActive              Boolean  @default(true)
+  isOnline              Boolean  @default(false) // คนขับกด "สแตนบายรับงาน" (ออนไลน์) — ปิดเมื่อพักรับงาน
+  lastSeenAt            DateTime? // heartbeat: อัปเดตทุกครั้งที่หน้าคนขับ poll — ใช้ตัดคนที่ปิดแอปทิ้งไว้ออกจาก "พร้อมรับงาน"
   commissionPerDelivery Decimal  @default(0) // ค่าคอมมิชชั่นต่องาน (บาท) — แอดมินตั้งเอง default 0
   lastLat               Float?
   lastLng               Float?
