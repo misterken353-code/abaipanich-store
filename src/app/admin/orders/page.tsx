@@ -1,9 +1,37 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
+import OrderDateFilter, { type MonthGroup, type DateOption } from "./OrderDateFilter";
+
+const TZ = "Asia/Bangkok";
+const FULL_MONTHS = [
+  "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+  "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
+];
+const SHORT_MONTHS = [
+  "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
+  "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
+];
+
+// แปลงเวลา UTC เป็น "YYYY-MM-DD" ตามเวลาไทย (Asia/Bangkok, +07:00 คงที่ ไม่มี DST)
+function bangkokDateKey(d: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+// "YYYY-MM-DD" → "7 กรกฎาคม 2569" (พ.ศ.)
+function thaiFullDate(key: string): string {
+  const [y, m, d] = key.split("-").map(Number);
+  return `${d} ${FULL_MONTHS[m - 1]} ${y + 543}`;
+}
 
 const STATUS_STYLE: Record<string, string> = {
   PENDING_PAYMENT: "bg-amber-100 text-amber-700",
-  PAID: "bg-emerald-100 text-emerald-700",
+  PAID: "bg-green-100 text-green-700",
   SHIPPED: "bg-blue-100 text-blue-700",
   CANCELLED: "bg-gray-200 text-gray-500",
 };
@@ -29,29 +57,95 @@ const PAYMENT_LABEL: Record<string, string> = {
 export default async function AdminOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; date?: string }>;
 }) {
-  const { q } = await searchParams;
+  const { q, date } = await searchParams;
   const query = q?.trim();
+  const today = bangkokDateKey(new Date());
 
-  const orders = await prisma.order.findMany({
-    where: query
-      ? {
-          OR: [
-            { orderNo: { contains: query, mode: "insensitive" } },
-            { customer: { name: { contains: query, mode: "insensitive" } } },
-            { customer: { phone: { contains: query, mode: "insensitive" } } },
-          ],
-        }
-      : undefined,
-    include: { customer: true, items: true, rider: true },
-    orderBy: { createdAt: "desc" },
-    take: 200,
+  // ค่าวันที่ที่เลือก: "all" = ทุกวัน, รูปแบบ YYYY-MM-DD = วันนั้น, ไม่ระบุ = วันนี้
+  const selectedDate =
+    date === "all" ? "all" : date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today;
+
+  // where: ถ้ามีคำค้นหา → ค้นข้ามทุกวัน, ไม่งั้นกรองตามวันที่เลือก (เว้นแต่ "ทุกวัน")
+  let where: Prisma.OrderWhereInput | undefined;
+  if (query) {
+    where = {
+      OR: [
+        { orderNo: { contains: query, mode: "insensitive" } },
+        { customer: { name: { contains: query, mode: "insensitive" } } },
+        { customer: { phone: { contains: query, mode: "insensitive" } } },
+      ],
+    };
+  } else if (selectedDate !== "all") {
+    const startUtc = new Date(`${selectedDate}T00:00:00+07:00`);
+    const endUtc = new Date(startUtc.getTime() + 24 * 60 * 60 * 1000);
+    where = { createdAt: { gte: startUtc, lt: endUtc } };
+  }
+
+  const [orders, allOrderDates] = await Promise.all([
+    prisma.order.findMany({
+      where,
+      include: { customer: true, items: true, rider: true },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    }),
+    // ดึงเฉพาะวันที่ของทุกออเดอร์ ไว้สร้าง dropdown เลือกวัน (จัดกลุ่มตามเดือน)
+    prisma.order.findMany({ select: { createdAt: true }, orderBy: { createdAt: "desc" } }),
+  ]);
+
+  // นับจำนวนออเดอร์ต่อวัน (ตามเวลาไทย) + ใส่ "วันนี้" ไว้เสมอแม้ยังไม่มีออเดอร์
+  const counts = new Map<string, number>();
+  for (const o of allOrderDates) {
+    const key = bangkokDateKey(o.createdAt);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  if (!counts.has(today)) counts.set(today, 0);
+
+  // จัดกลุ่มวันเป็นเดือน (เรียงใหม่→เก่า)
+  const sortedKeys = [...counts.keys()].sort().reverse();
+  const monthMap = new Map<string, DateOption[]>();
+  for (const key of sortedKeys) {
+    const [y, m, d] = key.split("-").map(Number);
+    const monthKey = `${y}-${String(m).padStart(2, "0")}`;
+    const count = counts.get(key) ?? 0;
+    const isToday = key === today;
+    const label = `${d} ${SHORT_MONTHS[m - 1]}${isToday ? " (วันนี้)" : ""} — ${
+      count > 0 ? `${count} ออเดอร์` : "ไม่มีออเดอร์"
+    }`;
+    if (!monthMap.has(monthKey)) monthMap.set(monthKey, []);
+    monthMap.get(monthKey)!.push({ value: key, label });
+  }
+  const months: MonthGroup[] = [...monthMap.entries()].map(([mk, options]) => {
+    const [y, m] = mk.split("-").map(Number);
+    return { label: `${FULL_MONTHS[m - 1]} ${y + 543}`, options };
   });
+
+  const heading = query
+    ? `ผลค้นหา "${query}"`
+    : selectedDate === "all"
+    ? "ออเดอร์ทั้งหมด"
+    : `ออเดอร์วันที่ ${thaiFullDate(selectedDate)}${selectedDate === today ? " (วันนี้)" : ""}`;
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-semibold">ออเดอร์ลูกค้า</h1>
+      <h1 className="mb-1 text-xl font-semibold">ออเดอร์ลูกค้า</h1>
+      <p className="mb-4 text-sm text-gray-500">
+        {heading} — {orders.length.toLocaleString("th-TH")} รายการ
+      </p>
+
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="text-sm font-semibold text-gray-600">ดูออเดอร์ตามวัน:</span>
+        <OrderDateFilter months={months} value={query ? today : selectedDate} />
+        {selectedDate !== "all" && !query && (
+          <a
+            href="/admin/orders?date=all"
+            className="text-sm font-semibold text-green-700 hover:underline"
+          >
+            ดูทั้งหมด
+          </a>
+        )}
+      </div>
 
       <form className="mb-4 flex gap-2" action="/admin/orders" method="get">
         <input
@@ -111,7 +205,7 @@ export default async function AdminOrdersPage({
                 </td>
                 <td className="px-4 py-2">
                   {o.acknowledgedAt ? (
-                    <span className="text-emerald-600 font-bold" title={o.acknowledgedAt.toLocaleString("th-TH")}>
+                    <span className="text-green-600 font-bold" title={o.acknowledgedAt.toLocaleString("th-TH")}>
                       ✓
                     </span>
                   ) : (
@@ -142,7 +236,11 @@ export default async function AdminOrdersPage({
             {orders.length === 0 && (
               <tr>
                 <td colSpan={10} className="px-4 py-8 text-center text-gray-400">
-                  {query ? `ไม่พบออเดอร์ที่ตรงกับ "${query}"` : "ยังไม่มีออเดอร์"}
+                  {query
+                    ? `ไม่พบออเดอร์ที่ตรงกับ "${query}"`
+                    : selectedDate === "all"
+                    ? "ยังไม่มีออเดอร์"
+                    : `ไม่มีออเดอร์ในวันที่ ${thaiFullDate(selectedDate)}`}
                 </td>
               </tr>
             )}
