@@ -29,10 +29,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ application: updated });
   }
 
-  // approve — สร้างคนขับจากข้อมูลใบสมัครในทรานแซกชันเดียว
+  // approve — สร้างคนขับจากข้อมูลใบสมัคร (รวมบัญชีธนาคาร) ในทรานแซกชันเดียว
   const result = await prisma.$transaction(async (tx) => {
     const rider = await tx.rider.create({
-      data: { name: application.name, phone: application.phone },
+      data: {
+        name: application.name,
+        phone: application.phone,
+        bankName: application.bankName,
+        bankAccountNumber: application.bankAccountNumber,
+        bankAccountName: application.bankAccountName,
+      },
     });
     const updated = await tx.riderApplication.update({
       where: { id },

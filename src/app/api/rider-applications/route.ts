@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notifyShop } from "@/lib/line";
+import { namesMatch } from "@/lib/nameMatch";
 
 // ~2MB base64 (รูปถูกบีบอัดฝั่ง client เหลือราว 100-400KB อยู่แล้ว — กันเฉพาะเคสยัดไฟล์ใหญ่ตรงๆ)
 const MAX_IMAGE_LENGTH = 2_000_000;
@@ -8,15 +9,21 @@ const MAX_IMAGE_LENGTH = 2_000_000;
 // POST /api/rider-applications — สมัครม้าเร็ว (public ไม่ต้อง login)
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
-  const { name, phone, idCardImage, note } = body as {
+  const { name, phone, idCardImage, bankName, bankAccountNumber, bankAccountName, note } = body as {
     name?: string;
     phone?: string;
     idCardImage?: string;
+    bankName?: string;
+    bankAccountNumber?: string;
+    bankAccountName?: string;
     note?: string | null;
   };
 
   const cleanName = name?.trim();
   const cleanPhone = phone?.replace(/[^0-9]/g, "");
+  const cleanBankName = bankName?.trim();
+  const cleanBankAccountNumber = bankAccountNumber?.trim();
+  const cleanBankAccountName = bankAccountName?.trim();
 
   if (!cleanName || !cleanPhone) {
     return NextResponse.json({ error: "กรุณากรอกชื่อและเบอร์โทรศัพท์" }, { status: 400 });
@@ -29,6 +36,16 @@ export async function POST(req: NextRequest) {
   }
   if (idCardImage.length > MAX_IMAGE_LENGTH) {
     return NextResponse.json({ error: "รูปใหญ่เกินไป กรุณาลองใหม่อีกครั้ง" }, { status: 400 });
+  }
+  if (!cleanBankName || !cleanBankAccountNumber || !cleanBankAccountName) {
+    return NextResponse.json({ error: "กรุณากรอกข้อมูลบัญชีธนาคารให้ครบ" }, { status: 400 });
+  }
+  // บัญชีต้องเป็นของผู้สมัครเองเท่านั้น — กันโอนค่าวิ่งงานผิดคน
+  if (!namesMatch(cleanName, cleanBankAccountName)) {
+    return NextResponse.json(
+      { error: "ชื่อบัญชีธนาคารต้องตรงกับชื่อผู้สมัคร (ต้องเป็นบัญชีของคุณเองเท่านั้น)" },
+      { status: 400 }
+    );
   }
 
   // กันสมัครซ้ำ: มีใบสมัครรอตรวจอยู่แล้ว หรือเป็นคนขับในระบบอยู่แล้ว
@@ -54,6 +71,9 @@ export async function POST(req: NextRequest) {
       name: cleanName,
       phone: cleanPhone,
       idCardImage,
+      bankName: cleanBankName,
+      bankAccountNumber: cleanBankAccountNumber,
+      bankAccountName: cleanBankAccountName,
       note: note?.trim() || null,
     },
   });

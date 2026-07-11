@@ -117,7 +117,7 @@ enum DeliveryStage {
 
 enum ShippingMethod {
   PICKUP      // รับเองหน้าร้าน
-  MOTORCYCLE  // เรียกม้าเร็วจัดส่ง — ค่าส่งจ่ายแยกให้คนขับ ไม่รวมใน totalAmount/QR
+  MOTORCYCLE  // เรียกม้าเร็วจัดส่ง — ค่าวิ่งงาน (deliveryFee) เก็บรวมกับลูกค้าในบิลเดียว (totalAmount+deliveryFee) แล้วร้านจ่ายคืนให้ม้าเร็วทีหลัง (ดู Order.riderCommission)
   FREIGHT     // จัดส่งทางขนส่ง — ค่าส่งจ่ายปลายทาง ไม่รวมใน totalAmount/QR
 }
 
@@ -182,6 +182,9 @@ model Rider {
   lastLat               Float?
   lastLng               Float?
   lastLocationAt        DateTime?
+  bankName              String? // ธนาคารสำหรับโอนจ่ายค่าวิ่งงาน/ค่าคอมมิชชั่น
+  bankAccountNumber     String?
+  bankAccountName       String? // ต้องตรงกับชื่อผู้สมัคร (Rider.name) — กันโอนผิดคน
   createdAt             DateTime @default(now())
 
   orders Order[]
@@ -200,6 +203,9 @@ model RiderApplication {
   name        String
   phone       String
   idCardImage String                 @db.Text // data URL (JPEG base64 บีบอัดฝั่ง client) — ยังไม่มี Blob storage
+  bankName          String? // ธนาคารสำหรับโอนจ่ายค่าวิ่งงาน — คัดลอกไปที่ Rider ตอนอนุมัติ
+  bankAccountNumber String?
+  bankAccountName   String? // ต้องตรงกับชื่อผู้สมัคร (name) — เช็คฝั่ง client+server กันโอนผิดคน
   note        String?
   status      RiderApplicationStatus @default(PENDING)
   riderId     String? // Rider ที่สร้างขึ้นตอนอนุมัติ

@@ -9,6 +9,9 @@ export interface RiderApplicationView {
   name: string;
   phone: string;
   idCardImage: string;
+  bankName: string | null;
+  bankAccountNumber: string | null;
+  bankAccountName: string | null;
   note: string | null;
   createdAt: string;
 }
@@ -79,6 +82,11 @@ export default function ApplicationsPanel({ applications }: { applications: Ride
             <div className="min-w-0 flex-1">
               <p className="font-medium text-gray-800">{app.name}</p>
               <p className="text-sm text-gray-500">{app.phone}</p>
+              {app.bankName && (
+                <p className="text-xs text-gray-500">
+                  🏦 {app.bankName} · {app.bankAccountNumber} · {app.bankAccountName}
+                </p>
+              )}
               {app.note && <p className="text-xs text-gray-400">หมายเหตุ: {app.note}</p>}
               <p className="text-xs text-gray-400">
                 สมัครเมื่อ {new Date(app.createdAt).toLocaleString("th-TH")}

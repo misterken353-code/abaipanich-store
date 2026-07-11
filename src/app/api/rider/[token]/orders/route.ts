@@ -41,7 +41,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: str
     // ยอดค้าง (ค่าคอมมิชชั่น/เงินสด COD) ต้องคำนวณจากทุกงาน ไม่ใช่แค่ 20 รายการล่าสุดใน history — ไม่งั้นยอดจะตกหล่นถ้าค้างเกิน 20 งาน
     prisma.order.findMany({
       where: { riderId: rider.id, status: "SHIPPED" },
-      select: { riderCommission: true, commissionSettled: true, paymentMethod: true, totalAmount: true, codRemitted: true },
+      select: { riderCommission: true, commissionSettled: true, paymentMethod: true, totalAmount: true, deliveryFee: true, codRemitted: true },
     }),
   ]);
 
@@ -50,9 +50,10 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: str
   const unsettledCommission = unsettled
     .filter((o) => !o.commissionSettled)
     .reduce((s, o) => s + Number(o.riderCommission ?? 0), 0);
+  // เงินสด COD ที่คนขับต้องนำส่งร้าน = ค่าสินค้า + ค่าวิ่งงาน (เก็บรวมจากลูกค้า แล้วร้านจ่ายค่าวิ่งงานคืนทีหลัง)
   const unsettledCod = unsettled
     .filter((o) => o.paymentMethod === "COD" && !o.codRemitted)
-    .reduce((s, o) => s + Number(o.totalAmount), 0);
+    .reduce((s, o) => s + Number(o.totalAmount) + Number(o.deliveryFee ?? 0), 0);
 
   return NextResponse.json({
     rider: { name: rider.name, isOnline: rider.isOnline, avgRating, ratedCount: rated.length, unsettledCommission, unsettledCod },

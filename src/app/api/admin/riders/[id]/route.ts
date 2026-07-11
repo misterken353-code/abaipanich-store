@@ -9,12 +9,24 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
   const { id } = await ctx.params;
   const body = await req.json().catch(() => ({}));
-  const { name, phone, lineUserId, isActive, commissionPerDelivery } = body as {
+  const {
+    name,
+    phone,
+    lineUserId,
+    isActive,
+    commissionPerDelivery,
+    bankName,
+    bankAccountNumber,
+    bankAccountName,
+  } = body as {
     name?: string;
     phone?: string;
     lineUserId?: string | null;
     isActive?: boolean;
     commissionPerDelivery?: number;
+    bankName?: string | null;
+    bankAccountNumber?: string | null;
+    bankAccountName?: string | null;
   };
 
   const rider = await prisma.rider
@@ -26,6 +38,9 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
         ...(lineUserId !== undefined ? { lineUserId: lineUserId?.trim() || null } : {}),
         ...(isActive !== undefined ? { isActive } : {}),
         ...(commissionPerDelivery !== undefined ? { commissionPerDelivery } : {}),
+        ...(bankName !== undefined ? { bankName } : {}),
+        ...(bankAccountNumber !== undefined ? { bankAccountNumber } : {}),
+        ...(bankAccountName !== undefined ? { bankAccountName } : {}),
       },
     })
     .catch(() => null);

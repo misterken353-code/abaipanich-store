@@ -42,8 +42,14 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     order.customerLng != null
   ) {
     const staleBefore = new Date(Date.now() - LOCATION_FRESHNESS_MS);
+    // แจ้งเฉพาะม้าเร็วที่ "สแตนบายรับงาน" อยู่ (isOnline) และแชร์ตำแหน่งล่าสุดไว้ — ใครกดรับก่อนได้งาน
     const riders = await prisma.rider.findMany({
-      where: { isActive: true, lineUserId: { not: null }, lastLocationAt: { gte: staleBefore } },
+      where: {
+        isActive: true,
+        isOnline: true,
+        lineUserId: { not: null },
+        lastLocationAt: { gte: staleBefore },
+      },
     });
 
     const nearby = riders

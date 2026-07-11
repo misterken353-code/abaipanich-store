@@ -48,9 +48,9 @@ export default async function AdminOrderDetailPage({
   const grandTotal = productTotal + deliveryFee;
   const collectNote =
     order.paymentMethod === "COD"
-      ? "เก็บเงินปลายทางจากลูกค้า (ค่าสินค้า + ค่าส่ง)"
+      ? "เก็บเงินปลายทางจากลูกค้า (ค่าสินค้า + ค่าวิ่งงาน รวมในบิลเดียว)"
       : deliveryFee > 0
-        ? "ค่าสินค้าโอนแล้ว — เหลือเก็บค่าส่งสดกับคนขับ"
+        ? "ลูกค้าโอนครบแล้ว (รวมค่าวิ่งงาน) — ค่าวิ่งงานเป็นรายรับม้าเร็วที่ต้องจ่ายคืน"
         : "ชำระครบแล้วผ่าน PromptPay";
 
   return (
@@ -128,7 +128,7 @@ export default async function AdminOrderDetailPage({
           </div>
           {deliveryFee > 0 && (
             <div className="flex items-center justify-between text-gray-600">
-              <span>ค่าส่งม้าเร็ว (คนขับเก็บสด)</span>
+              <span>ค่าวิ่งงานม้าเร็ว (รายรับม้าเร็ว)</span>
               <span>{baht(deliveryFee)} บาท</span>
             </div>
           )}
@@ -157,7 +157,7 @@ export default async function AdminOrderDetailPage({
         <p>วิธีจัดส่ง: {SHIPPING_LABEL[order.shippingMethod] ?? order.shippingMethod}</p>
         {order.shippingMethod === "MOTORCYCLE" && order.deliveryFee != null && Number(order.deliveryFee) > 0 && (
           <p className="text-xs text-gray-500">
-            ค่าส่ง (คนขับเก็บสดจากลูกค้า): {Number(order.deliveryFee).toLocaleString("th-TH")} บาท
+            ค่าวิ่งงานม้าเร็ว (รวมเก็บในบิลแล้ว — รายรับม้าเร็ว): {Number(order.deliveryFee).toLocaleString("th-TH")} บาท
           </p>
         )}
         {order.shippingAddress && <p>ที่อยู่: {order.shippingAddress}</p>}

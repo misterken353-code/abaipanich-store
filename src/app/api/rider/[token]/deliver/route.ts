@@ -14,14 +14,19 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
   const { orderId } = body as { orderId?: string };
   if (!orderId) return NextResponse.json({ error: "ไม่พบออเดอร์" }, { status: 400 });
 
-  const result = await prisma.order.updateMany({
-    where: { id: orderId, riderId: rider.id },
-    data: { status: "SHIPPED", deliveryStage: "DELIVERED", riderCommission: rider.commissionPerDelivery },
-  });
-
-  if (result.count === 0) {
+  // เช็คว่างานนี้เป็นของคนขับคนนี้จริง ก่อนคิดค่าตอบแทน
+  const target = await prisma.order.findFirst({ where: { id: orderId, riderId: rider.id } });
+  if (!target) {
     return NextResponse.json({ error: "ไม่พบงานนี้ในรายการของคุณ" }, { status: 404 });
   }
+
+  // รายรับม้าเร็ว = ค่าวิ่งงาน (deliveryFee) + ค่าคอมมิชชั่นต่องาน (ถ้าตั้งไว้) — ร้านเก็บเงินรวมแล้วจ่ายคืนม้าเร็วทีหลัง
+  const riderPayout = Number(target.deliveryFee ?? 0) + Number(rider.commissionPerDelivery);
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { status: "SHIPPED", deliveryStage: "DELIVERED", riderCommission: riderPayout },
+  });
 
   const order = await prisma.order.findUnique({ where: { id: orderId }, include: { customer: true } });
   if (order) {

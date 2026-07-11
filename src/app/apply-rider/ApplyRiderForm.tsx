@@ -1,6 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { namesMatch } from "@/lib/nameMatch";
+
+const BANKS = [
+  "กสิกรไทย", "ไทยพาณิชย์", "กรุงไทย", "กรุงเทพ", "กรุงศรีอยุธยา",
+  "ทหารไทยธนชาต", "ออมสิน", "ธ.ก.ส.", "ซีไอเอ็มบี ไทย", "ยูโอบี", "อื่น ๆ",
+];
 
 const FIELD_CLASS =
   "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-green-500";
@@ -36,6 +42,9 @@ async function compressImage(file: File): Promise<string> {
 export default function ApplyRiderForm({ lineOaUrl }: { lineOaUrl: string | null }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [bankAccountNumber, setBankAccountNumber] = useState("");
+  const [bankAccountName, setBankAccountName] = useState("");
   const [note, setNote] = useState("");
   const [idCardImage, setIdCardImage] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -69,6 +78,14 @@ export default function ApplyRiderForm({ lineOaUrl }: { lineOaUrl: string | null
       setError("กรุณาแนบรูปบัตรประชาชน");
       return;
     }
+    if (!bankName || !bankAccountNumber.trim() || !bankAccountName.trim()) {
+      setError("กรุณากรอกข้อมูลบัญชีธนาคารให้ครบ (สำหรับโอนค่าวิ่งงาน)");
+      return;
+    }
+    if (!namesMatch(name, bankAccountName)) {
+      setError("ชื่อบัญชีธนาคารต้องตรงกับชื่อผู้สมัคร (ต้องเป็นบัญชีของคุณเองเท่านั้น)");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch("/api/rider-applications", {
@@ -78,6 +95,9 @@ export default function ApplyRiderForm({ lineOaUrl }: { lineOaUrl: string | null
           name: name.trim(),
           phone: phone.trim(),
           idCardImage,
+          bankName,
+          bankAccountNumber: bankAccountNumber.trim(),
+          bankAccountName: bankAccountName.trim(),
           note: note.trim() || null,
         }),
       });
@@ -161,6 +181,52 @@ export default function ApplyRiderForm({ lineOaUrl }: { lineOaUrl: string | null
             className="mt-2 max-h-48 rounded-lg border border-gray-200 object-contain"
           />
         )}
+      </div>
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+        <p className="mb-3 text-sm font-semibold text-gray-700">บัญชีธนาคารสำหรับรับค่าวิ่งงาน</p>
+        <div className="space-y-3">
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-gray-600">ธนาคาร</label>
+            <select
+              value={bankName}
+              onChange={(e) => setBankName(e.target.value)}
+              className={FIELD_CLASS}
+            >
+              <option value="">เลือกธนาคาร</option>
+              {BANKS.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-gray-600">เลขบัญชี</label>
+            <input
+              value={bankAccountNumber}
+              onChange={(e) => setBankAccountNumber(e.target.value)}
+              inputMode="numeric"
+              className={FIELD_CLASS}
+              placeholder="เลขที่บัญชีธนาคาร"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-gray-600">ชื่อบัญชี</label>
+            <input
+              value={bankAccountName}
+              onChange={(e) => setBankAccountName(e.target.value)}
+              className={FIELD_CLASS}
+              placeholder="ต้องตรงกับชื่อ-นามสกุลด้านบน"
+            />
+            {bankAccountName.trim() && (
+              <p className={`mt-1 text-xs ${namesMatch(name, bankAccountName) ? "text-green-600" : "text-red-600"}`}>
+                {namesMatch(name, bankAccountName)
+                  ? "✓ ชื่อบัญชีตรงกับชื่อผู้สมัคร"
+                  : "⚠️ ชื่อบัญชีต้องตรงกับชื่อผู้สมัครด้านบน (ต้องเป็นบัญชีของคุณเอง)"}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
       <div>
         <label className="mb-1 block text-sm font-semibold text-gray-700">

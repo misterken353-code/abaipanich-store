@@ -2,6 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { namesMatch } from "@/lib/nameMatch";
+
+const BANKS = [
+  "กสิกรไทย", "ไทยพาณิชย์", "กรุงไทย", "กรุงเทพ", "กรุงศรีอยุธยา",
+  "ทหารไทยธนชาต", "ออมสิน", "ธ.ก.ส.", "ซีไอเอ็มบี ไทย", "ยูโอบี", "อื่น ๆ",
+];
 
 interface Rider {
   id: string;
@@ -16,6 +22,9 @@ interface Rider {
   ratedCount: number;
   unsettledCommission: number;
   unsettledCod: number;
+  bankName: string | null;
+  bankAccountNumber: string | null;
+  bankAccountName: string | null;
 }
 
 export default function RidersManager({ riders }: { riders: Rider[] }) {
@@ -29,6 +38,9 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
   const [commissionDrafts, setCommissionDrafts] = useState<Record<string, string>>({});
   const [settlingId, setSettlingId] = useState<string | null>(null);
   const [settlingCodId, setSettlingCodId] = useState<string | null>(null);
+  const [editingBankId, setEditingBankId] = useState<string | null>(null);
+  const [bankDraft, setBankDraft] = useState({ bankName: "", bankAccountNumber: "", bankAccountName: "" });
+  const [savingBank, setSavingBank] = useState(false);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -110,6 +122,34 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
       router.refresh();
     } finally {
       setSettlingId(null);
+    }
+  }
+
+  function startEditBank(rider: Rider) {
+    setEditingBankId(rider.id);
+    setBankDraft({
+      bankName: rider.bankName ?? "",
+      bankAccountNumber: rider.bankAccountNumber ?? "",
+      bankAccountName: rider.bankAccountName ?? "",
+    });
+  }
+
+  async function saveBank(rider: Rider) {
+    setSavingBank(true);
+    try {
+      await fetch(`/api/admin/riders/${rider.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bankName: bankDraft.bankName || null,
+          bankAccountNumber: bankDraft.bankAccountNumber.trim() || null,
+          bankAccountName: bankDraft.bankAccountName.trim() || null,
+        }),
+      });
+      setEditingBankId(null);
+      router.refresh();
+    } finally {
+      setSavingBank(false);
     }
   }
 
@@ -201,7 +241,22 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
                     </span>
                   </div>
                 </td>
-                <td className="px-4 py-2 text-gray-500">{r.phone}</td>
+                <td className="px-4 py-2 text-gray-500">
+                  <p>{r.phone}</p>
+                  {r.bankAccountNumber ? (
+                    <p className="mt-0.5 text-[11px] text-gray-400">
+                      🏦 {r.bankName} · {r.bankAccountNumber}
+                    </p>
+                  ) : (
+                    <p className="mt-0.5 text-[11px] text-red-400">ยังไม่มีบัญชีธนาคาร</p>
+                  )}
+                  <button
+                    onClick={() => startEditBank(r)}
+                    className="mt-0.5 text-[11px] font-semibold text-green-700 hover:underline"
+                  >
+                    แก้ไขบัญชี
+                  </button>
+                </td>
                 <td className="px-4 py-2 text-gray-500">
                   {r.lineUserId ? "✓ ผูกแล้ว" : <span className="text-gray-300">ยังไม่ผูก</span>}
                 </td>
@@ -284,6 +339,62 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
                 </td>
               </tr>
             ))}
+            {riders.map(
+              (r) =>
+                editingBankId === r.id && (
+                  <tr key={`${r.id}-bank`} className="border-t border-green-100 bg-green-50/50">
+                    <td colSpan={10} className="px-4 py-3">
+                      <p className="mb-2 text-xs font-semibold text-gray-700">
+                        แก้ไขบัญชีธนาคารของ {r.name}
+                      </p>
+                      <div className="flex flex-wrap items-end gap-2">
+                        <select
+                          value={bankDraft.bankName}
+                          onChange={(e) => setBankDraft((d) => ({ ...d, bankName: e.target.value }))}
+                          className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs outline-none focus:border-green-500"
+                        >
+                          <option value="">เลือกธนาคาร</option>
+                          {BANKS.map((b) => (
+                            <option key={b} value={b}>
+                              {b}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          value={bankDraft.bankAccountNumber}
+                          onChange={(e) => setBankDraft((d) => ({ ...d, bankAccountNumber: e.target.value }))}
+                          placeholder="เลขบัญชี"
+                          className="w-36 rounded-lg border border-gray-300 px-2 py-1.5 text-xs outline-none focus:border-green-500"
+                        />
+                        <input
+                          value={bankDraft.bankAccountName}
+                          onChange={(e) => setBankDraft((d) => ({ ...d, bankAccountName: e.target.value }))}
+                          placeholder="ชื่อบัญชี (ต้องตรงกับชื่อคนขับ)"
+                          className="w-56 rounded-lg border border-gray-300 px-2 py-1.5 text-xs outline-none focus:border-green-500"
+                        />
+                        <button
+                          onClick={() => saveBank(r)}
+                          disabled={savingBank}
+                          className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                        >
+                          {savingBank ? "กำลังบันทึก..." : "บันทึก"}
+                        </button>
+                        <button
+                          onClick={() => setEditingBankId(null)}
+                          className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+                        >
+                          ยกเลิก
+                        </button>
+                      </div>
+                      {bankDraft.bankAccountName.trim() && !namesMatch(r.name, bankDraft.bankAccountName) && (
+                        <p className="mt-1.5 text-[11px] text-amber-600">
+                          ⚠️ ชื่อบัญชีไม่ตรงกับชื่อคนขับ &quot;{r.name}&quot; — ตรวจสอบให้แน่ใจก่อนโอนเงินจริง
+                        </p>
+                      )}
+                    </td>
+                  </tr>
+                )
+            )}
             {riders.length === 0 && (
               <tr>
                 <td colSpan={10} className="px-4 py-8 text-center text-gray-400">

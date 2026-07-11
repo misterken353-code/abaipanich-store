@@ -154,10 +154,13 @@ export async function POST(req: NextRequest) {
       });
     });
 
+    // ยอดที่ลูกค้าต้องชำระ = ค่าสินค้า + ค่าวิ่งงาน (เก็บรวมในบิลเดียว — ค่าวิ่งงานเป็นรายรับม้าเร็วที่ร้านจ่ายคืนทีหลัง)
+    const grandTotal = totalAmount + (deliveryFee ?? 0);
+
     const promptPayId = process.env.PROMPTPAY_ID || appSettings?.promptPayId;
     if (paymentMethod === "TRANSFER" && promptPayId) {
       try {
-        const payload = generatePayload(promptPayId, { amount: totalAmount });
+        const payload = generatePayload(promptPayId, { amount: grandTotal });
         const qrDataUrl = await QRCode.toDataURL(payload, { width: 300, margin: 1 });
         await prisma.order.update({ where: { id: order.id }, data: { promptPayQr: qrDataUrl } });
       } catch (e) {
@@ -181,13 +184,16 @@ export async function POST(req: NextRequest) {
         paymentMethod === "COD"
           ? `ชำระเงิน: ${PAYMENT_LABEL.COD} (เงินสด)`
           : `ชำระเงิน: ${PAYMENT_LABEL.TRANSFER} (รอลูกค้าส่งสลิป)`;
-      const deliveryFeeLine = deliveryFee != null ? `\nค่าส่ง (เก็บสด): ${deliveryFee.toLocaleString("th-TH")} บาท` : "";
+      const feeLine =
+        deliveryFee != null && deliveryFee > 0
+          ? `ค่าสินค้า: ${totalAmount.toLocaleString("th-TH")} บาท\nค่าวิ่งงานม้าเร็ว: ${deliveryFee.toLocaleString("th-TH")} บาท\nยอดที่ต้องเก็บรวม: ${(totalAmount + deliveryFee).toLocaleString("th-TH")} บาท`
+          : `ยอดรวม: ${totalAmount.toLocaleString("th-TH")} บาท`;
       await notifyShop(
         `🛒 ออเดอร์ใหม่ ${order.orderNo}${hasPreOrder ? " (มีสินค้า Pre-order)" : ""}\n` +
           `ลูกค้า: ${customer.name.trim()} (${customer.phone.trim()})\n` +
           `${itemLines}\n` +
-          `ยอดรวม: ${totalAmount.toLocaleString("th-TH")} บาท\n` +
-          `จัดส่ง: ${SHIPPING_LABEL[shippingMethod] ?? shippingMethod}${mapsLine}${deliveryFeeLine}\n` +
+          `${feeLine}\n` +
+          `จัดส่ง: ${SHIPPING_LABEL[shippingMethod] ?? shippingMethod}${mapsLine}\n` +
           `${paymentLine}` +
           (hasPreOrder ? `\n📦 มีสินค้า Pre-order — อย่าลืมกด "สินค้ามาถึงร้านแล้ว" ตอนของเข้า` : "") +
           (appUrl ? `\n\nดูรายละเอียด: ${appUrl}/admin/orders/${order.id}` : "")

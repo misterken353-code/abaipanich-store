@@ -189,7 +189,7 @@ export default function RiderDashboard({ token }: { token: string }) {
               {rider?.avgRating != null ? `⭐ ${rider.avgRating.toFixed(1)} (${rider.ratedCount})` : "ยังไม่มีคะแนน"}
             </span>
             <span>·</span>
-            <span>ค้างจ่าย ฿{(rider?.unsettledCommission ?? 0).toLocaleString("th-TH")}</span>
+            <span>ค่าวิ่งงานค้างรับ ฿{(rider?.unsettledCommission ?? 0).toLocaleString("th-TH")}</span>
             <span>·</span>
             <span>เงินสดค้างนำส่งร้าน ฿{(rider?.unsettledCod ?? 0).toLocaleString("th-TH")}</span>
             <span>·</span>
@@ -304,11 +304,13 @@ function OrderCard({
   order: OrderInfo;
   action: { label: string; busy: boolean; onClick: () => void };
 }) {
+  const fee = Number(order.deliveryFee ?? 0);
+  const grandTotal = Number(order.totalAmount) + fee;
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
       <div className="flex items-center justify-between">
         <p className="font-bold text-gray-800">{order.orderNo}</p>
-        <p className="text-green-700 font-extrabold">฿{Number(order.totalAmount).toLocaleString("th-TH")}</p>
+        <p className="text-green-700 font-extrabold">฿{grandTotal.toLocaleString("th-TH")}</p>
       </div>
       <p className="text-sm text-gray-600 mt-1">{order.customer.name} · {order.customer.phone}</p>
       <p className="text-xs text-gray-400 mt-1">
@@ -325,14 +327,18 @@ function OrderCard({
           เปิดแผนที่นำทาง
         </a>
       )}
-      {order.paymentMethod === "COD" && (
+      {order.paymentMethod === "COD" ? (
         <p className="mt-2 text-xs font-bold text-amber-600 bg-amber-50 inline-block rounded-full px-3 py-1">
-          💵 เก็บเงินค่าสินค้าจากลูกค้า ฿{Number(order.totalAmount).toLocaleString("th-TH")} (นำส่งร้าน)
+          💵 เก็บเงินจากลูกค้า ฿{grandTotal.toLocaleString("th-TH")} (รวมค่าวิ่งงาน — นำส่งร้านทั้งหมด)
+        </p>
+      ) : (
+        <p className="mt-2 text-xs font-bold text-green-700 bg-green-50 inline-block rounded-full px-3 py-1">
+          ✓ ลูกค้าโอนเงินแล้ว ไม่ต้องเก็บเงินสด
         </p>
       )}
-      {order.deliveryFee != null && Number(order.deliveryFee) > 0 && (
+      {fee > 0 && (
         <p className="mt-2 ml-2 text-xs font-bold text-green-700 bg-green-50 inline-block rounded-full px-3 py-1">
-          💰 ค่าส่งเก็บจากลูกค้า ฿{Number(order.deliveryFee).toLocaleString("th-TH")} (ของคุณ)
+          💰 ค่าวิ่งงานของคุณ ฿{fee.toLocaleString("th-TH")} (ร้านจ่ายคืนทีหลัง)
         </p>
       )}
 

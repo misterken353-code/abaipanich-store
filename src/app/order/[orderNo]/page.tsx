@@ -23,7 +23,7 @@ const SHIPPING_LABEL: Record<string, string> = {
 
 const SHIPPING_NOTE: Record<string, string> = {
   PICKUP: "ไม่มีค่าจัดส่ง",
-  MOTORCYCLE: "ค่าส่งม้าเร็ว (เริ่มต้น 15 บาท กม.แรก, กม.ที่ 2 ขึ้นไป กม.ละ 5 บาท) ไม่รวมในยอดนี้ — ชำระให้คนขับโดยตรง",
+  MOTORCYCLE: "ค่าวิ่งงานม้าเร็ว (15 บาท กม.แรก, กม.ที่ 2 ขึ้นไป กม.ละ 5 บาท) คิดตามระยะทางจริงและรวมในยอดชำระให้อัตโนมัติ",
   FREIGHT: "ชำระค่าส่งปลายทางกับบริษัทขนส่ง",
 };
 
@@ -45,6 +45,12 @@ export default async function OrderConfirmationPage({
   });
 
   if (!order) notFound();
+
+  // ยอดชำระ = ค่าสินค้า + ค่าวิ่งงาน (เก็บรวมในบิลเดียว)
+  const productTotal = Number(order.totalAmount);
+  const deliveryFee =
+    order.shippingMethod === "MOTORCYCLE" && order.deliveryFee != null ? Number(order.deliveryFee) : 0;
+  const grandTotal = productTotal + deliveryFee;
 
   // ลิงก์เพิ่มเพื่อน LINE OA + QR (สร้างฝั่ง server) สำหรับการ์ด "เพิ่มเพื่อนแบบกดปุ่มเดียว"
   const settings = await prisma.appSettings.findUnique({ where: { id: "singleton" } });
@@ -116,11 +122,25 @@ export default async function OrderConfirmationPage({
               </div>
             ))}
           </div>
-          <div className="flex items-center justify-between pt-3 mt-2 border-t">
-            <span className="text-gray-500 font-semibold">ยอดรวม</span>
-            <span className="text-2xl font-extrabold text-green-700">
-              ฿{Number(order.totalAmount).toLocaleString("th-TH")}
-            </span>
+          <div className="pt-3 mt-2 border-t space-y-1">
+            {deliveryFee > 0 && (
+              <>
+                <div className="flex items-center justify-between text-sm text-gray-500">
+                  <span>ค่าสินค้า</span>
+                  <span>฿{productTotal.toLocaleString("th-TH")}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm text-gray-500">
+                  <span>ค่าวิ่งงานม้าเร็ว</span>
+                  <span>฿{deliveryFee.toLocaleString("th-TH")}</span>
+                </div>
+              </>
+            )}
+            <div className="flex items-center justify-between">
+              <span className="text-gray-500 font-semibold">ยอดชำระรวม</span>
+              <span className="text-2xl font-extrabold text-green-700">
+                ฿{grandTotal.toLocaleString("th-TH")}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -130,7 +150,8 @@ export default async function OrderConfirmationPage({
               <div className="text-3xl mb-2">💵</div>
               <p className="font-bold text-gray-700">ชำระเงินปลายทางเมื่อได้รับสินค้า</p>
               <p className="text-sm text-gray-500 mt-1">
-                เตรียมเงินสด ฿{Number(order.totalAmount).toLocaleString("th-TH")} ไว้ชำระตอนรับสินค้าได้เลย
+                เตรียมเงินสด ฿{grandTotal.toLocaleString("th-TH")} ไว้ชำระตอนรับสินค้าได้เลย
+                {deliveryFee > 0 && ` (รวมค่าวิ่งงาน ฿${deliveryFee.toLocaleString("th-TH")} แล้ว)`}
               </p>
             </>
           ) : order.promptPayQr ? (
@@ -139,7 +160,8 @@ export default async function OrderConfirmationPage({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={order.promptPayQr} alt="PromptPay QR" className="mx-auto w-64 h-64" />
               <p className="text-xs text-gray-400 mt-2">
-                ยอดชำระ ฿{Number(order.totalAmount).toLocaleString("th-TH")}
+                ยอดชำระ ฿{grandTotal.toLocaleString("th-TH")}
+                {deliveryFee > 0 && ` (รวมค่าวิ่งงาน ฿${deliveryFee.toLocaleString("th-TH")})`}
               </p>
               <p className="text-sm font-semibold text-amber-700 bg-amber-50 rounded-xl px-4 py-2 mt-4">
                 📎 โอนเสร็จแล้ว กรุณาส่งสลิปยืนยันการชำระเงินให้ทางร้านทาง LINE
@@ -160,9 +182,9 @@ export default async function OrderConfirmationPage({
           <p className="font-semibold text-gray-800 mb-2">การจัดส่ง</p>
           <p>วิธีชำระเงิน: {PAYMENT_LABEL[order.paymentMethod] ?? order.paymentMethod}</p>
           <p>วิธีจัดส่ง: {SHIPPING_LABEL[order.shippingMethod] ?? order.shippingMethod}</p>
-          {order.shippingMethod === "MOTORCYCLE" && order.deliveryFee != null && Number(order.deliveryFee) > 0 ? (
+          {deliveryFee > 0 ? (
             <p className="text-xs text-gray-400">
-              ค่าส่งโดยประมาณ: ฿{Number(order.deliveryFee).toLocaleString("th-TH")} (ชำระให้คนขับโดยตรง ไม่รวมในยอดนี้)
+              ค่าวิ่งงานม้าเร็ว: ฿{deliveryFee.toLocaleString("th-TH")} (รวมในยอดชำระแล้ว)
             </p>
           ) : (
             <p className="text-xs text-gray-400">{SHIPPING_NOTE[order.shippingMethod]}</p>
