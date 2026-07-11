@@ -57,67 +57,70 @@ export default function SalePageClient({ items }: { items: SalePageProduct[] }) 
 
   return (
     <>
-      <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {sortedItems.map((item) => {
           const soldOut = !item.isPreOrder && item.availableQty <= 0;
           return (
             <div
               key={item.productId}
-              className="flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white"
+              className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:ring-green-200"
             >
-              <div className="relative aspect-square bg-gray-100 p-2">
+              <div className="relative aspect-square overflow-hidden bg-gray-50">
                 {item.imageUrl ? (
                   <button
                     type="button"
                     onClick={() => setLightbox({ src: item.imageUrl!, alt: item.name })}
-                    className="group/img relative block h-full w-full cursor-zoom-in overflow-hidden rounded-lg border border-gray-200 bg-white"
+                    className="group/img relative block h-full w-full cursor-zoom-in"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={item.imageUrl}
                       alt={item.name}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover/img:scale-110"
                     />
-                    <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover/img:bg-black/20 group-hover/img:opacity-100">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-sm shadow">
+                    <span className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover/img:opacity-100" />
+                    <span className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-200 group-hover/img:opacity-100">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-sm shadow-md backdrop-blur">
                         🔍
                       </span>
                     </span>
                   </button>
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-300">
+                  <div className="flex h-full w-full items-center justify-center text-gray-300">
                     ไม่มีรูป
                   </div>
                 )}
                 <span
-                  className={`absolute right-2 top-2 rounded-full px-2 py-0.5 text-xs font-medium ${
+                  className={`absolute right-2 top-2 rounded-full px-2.5 py-1 text-[11px] font-bold shadow-sm backdrop-blur ${
                     item.isPreOrder
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-green-100 text-green-700"
+                      ? "bg-amber-400/90 text-white"
+                      : "bg-green-600/90 text-white"
                   }`}
                 >
-                  {item.isPreOrder ? "สั่งจอง" : "พร้อมส่ง"}
+                  {item.isPreOrder ? "🕐 สั่งจอง" : "✓ พร้อมส่ง"}
                 </span>
               </div>
               <div className="flex flex-1 flex-col gap-1 p-3">
-                <p className="line-clamp-2 text-sm font-medium text-gray-900">{item.name}</p>
+                <p className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-snug text-gray-900">
+                  {item.name}
+                </p>
                 {item.caption && <p className="text-xs text-gray-500">{item.caption}</p>}
-                <div className="mt-auto flex items-baseline gap-2 pt-1">
-                  <span className="text-lg font-semibold text-green-700">
+                <div className="mt-auto flex items-baseline gap-1 pt-1.5">
+                  <span className="text-xs font-bold text-green-600">฿</span>
+                  <span className="text-xl font-extrabold tracking-tight text-green-700">
                     {item.price.toLocaleString("th-TH")}
                   </span>
-                  <span className="text-xs text-gray-400">บาท</span>
                 </div>
 
                 {soldOut ? (
-                  <div className="mt-2 rounded-lg bg-gray-100 py-2 text-center text-xs text-gray-400">
+                  <div className="mt-2 rounded-full bg-gray-100 py-2 text-center text-xs font-medium text-gray-400">
                     สินค้าหมด
                   </div>
                 ) : (
                   <button
                     type="button"
                     onClick={() => addToCart(item)}
-                    className="mt-2 rounded-lg bg-green-600 py-2 text-sm font-medium text-white active:bg-green-700"
+                    className="mt-2 rounded-full bg-green-600 py-2 text-sm font-bold text-white shadow-sm transition-all duration-150 hover:bg-green-700 hover:shadow-md active:scale-95"
                   >
                     + ใส่ตะกร้า
                   </button>

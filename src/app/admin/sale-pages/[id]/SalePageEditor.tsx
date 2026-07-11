@@ -152,7 +152,15 @@ export default function SalePageEditor({
     setPosting(true);
     setPostMessage(null);
     const pageUrl = `${storeUrl}/p/${slug}`;
-    const message = [title, description, `ดูสินค้าทั้งหมด: ${pageUrl}`].filter(Boolean).join("\n\n");
+    const productLines = items
+      .map((it) => {
+        const price = it.priceOverride ?? it.product.salePrice;
+        return `🛍️ ${it.product.name} — ${price.toLocaleString("th-TH")} บาท`;
+      })
+      .join("\n");
+    const message = [title, description, productLines, `ดูสินค้าทั้งหมด: ${pageUrl}`]
+      .filter(Boolean)
+      .join("\n\n");
     setPreparedMessage(message);
     let copied = false;
     try {

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import StorefrontClient from "./StorefrontClient";
+import LineChatButton from "@/components/LineChatButton";
 
 export const revalidate = 60;
 
@@ -21,5 +22,10 @@ export default async function HomePage() {
     isPreOrder: p.isPreOrder,
   }));
 
-  return <StorefrontClient items={items} />;
+  return (
+    <>
+      <StorefrontClient items={items} />
+      <LineChatButton />
+    </>
+  );
 }

@@ -30,9 +30,9 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-emerald-700 text-white shadow-lg">
+      <header className="bg-green-700 text-white shadow-lg">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Link href="/" className="text-emerald-200 hover:text-white text-sm">
+          <Link href="/" className="text-green-200 hover:text-white text-sm">
             ← กลับไปเลือกสินค้า
           </Link>
         </div>
@@ -48,7 +48,7 @@ export default function CartPage() {
             <p className="font-semibold">ยังไม่มีสินค้าในตะกร้า</p>
             <Link
               href="/"
-              className="inline-block mt-4 bg-emerald-700 text-white text-sm font-bold px-5 py-2 rounded-full hover:bg-emerald-800"
+              className="inline-block mt-4 bg-green-700 text-white text-sm font-bold px-5 py-2 rounded-full hover:bg-green-800"
             >
               ไปเลือกสินค้า
             </Link>
@@ -81,7 +81,7 @@ export default function CartPage() {
                     <p className="text-[11px] text-gray-400 font-mono">{item.code}</p>
                     <p className="text-sm font-semibold text-gray-800 line-clamp-2">{item.name}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <p className="text-emerald-700 font-bold text-sm">
+                      <p className="text-green-700 font-bold text-sm">
                         ฿{item.price.toLocaleString("th-TH")}
                       </p>
                       {item.isPreOrder && (
@@ -119,14 +119,14 @@ export default function CartPage() {
 
             <div className="mt-6 bg-white rounded-2xl border border-gray-100 p-4 flex items-center justify-between">
               <span className="text-gray-500 font-semibold">ยอดรวม</span>
-              <span className="text-2xl font-extrabold text-emerald-700">
+              <span className="text-2xl font-extrabold text-green-700">
                 ฿{cartTotal(cart).toLocaleString("th-TH")}
               </span>
             </div>
 
             <Link
               href="/checkout"
-              className="mt-4 block text-center bg-emerald-700 text-white font-bold py-3 rounded-full hover:bg-emerald-800 transition-colors"
+              className="mt-4 block text-center bg-green-700 text-white font-bold py-3 rounded-full hover:bg-green-800 transition-colors"
             >
               ดำเนินการสั่งซื้อ
             </Link>

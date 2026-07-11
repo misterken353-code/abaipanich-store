@@ -116,13 +116,13 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
               onClick={() => handleTabChange("instock")}
               className={`flex items-center gap-2 px-6 py-3.5 text-sm font-bold border-b-2 transition-all ${
                 activeTab === "instock"
-                  ? "border-emerald-700 text-emerald-700"
+                  ? "border-green-700 text-green-700"
                   : "border-transparent text-gray-400 hover:text-gray-600"
               }`}
             >
               <span>🟢</span>
               <span>สินค้าพร้อมส่ง</span>
-              <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">
+              <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">
                 {inStock.length}
               </span>
             </button>
@@ -172,7 +172,7 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
               placeholder="ค้นหาสินค้า..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
             />
           </div>
         </div>
@@ -225,7 +225,7 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
                 {!isSearching && (
                   <button
                     onClick={() => setSelectedCategory(null)}
-                    className="text-sm font-semibold text-emerald-700 hover:underline flex items-center gap-1"
+                    className="text-sm font-semibold text-green-700 hover:underline flex items-center gap-1"
                   >
                     ← กลับไปหมวดหมู่
                   </button>
@@ -233,7 +233,7 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
                 {isSearching && (
                   <button
                     onClick={() => setSearch("")}
-                    className="text-sm font-semibold text-emerald-700 hover:underline flex items-center gap-1"
+                    className="text-sm font-semibold text-green-700 hover:underline flex items-center gap-1"
                   >
                     ✕ ล้างการค้นหา
                   </button>
@@ -243,7 +243,7 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
                 แสดง{" "}
                 <span
                   className={`font-bold ${
-                    activeTab === "preorder" ? "text-amber-600" : "text-emerald-700"
+                    activeTab === "preorder" ? "text-amber-600" : "text-green-700"
                   }`}
                 >
                   {filtered.length}
@@ -287,7 +287,7 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
           </p>
           <div className="w-16 h-px bg-amber-400/60 mx-auto my-3" />
 
-          <p className="text-emerald-100/90 text-sm leading-relaxed">
+          <p className="text-green-100/90 text-sm leading-relaxed">
             📍 63 หมู่ 3 บ้านสบาย ต.รุ่งระวี อ.น้ำเกลี้ยง จ.ศรีสะเกษ 33130
           </p>
           <a
@@ -303,7 +303,7 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
             </span>
           </div>
 
-          <p className="mt-4 text-emerald-300/70 text-xs">
+          <p className="mt-4 text-green-300/70 text-xs">
             🕐 สินค้า Pre-order นัดรับ ประมาณ 2–5 วัน — ไม่ได้ของภายใน 5 วัน คืนเงินเต็มจำนวนที่ร้าน
           </p>
 
@@ -320,11 +320,11 @@ export default function StorefrontClient({ items }: { items: StorefrontProduct[]
       {cart.length > 0 && (
         <Link
           href="/cart"
-          className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-emerald-700 text-white rounded-full shadow-xl px-5 py-3 hover:bg-emerald-800 transition-colors"
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-green-700 text-white rounded-full shadow-xl px-5 py-3 hover:bg-green-800 transition-colors"
         >
           <span className="text-xl">🛒</span>
           <span className="font-bold text-sm">{cartCount(cart)} รายการ</span>
-          <span className="w-px h-4 bg-emerald-400" />
+          <span className="w-px h-4 bg-green-400" />
           <span className="font-extrabold text-sm">
             ฿{cartTotal(cart).toLocaleString("th-TH")}
           </span>
@@ -356,7 +356,7 @@ function ProductCard({
       Pre-order
     </span>
   ) : product.availableQty > 10 ? (
-    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full text-emerald-600 bg-emerald-50">
+    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full text-green-600 bg-green-50">
       คงเหลือ {product.availableQty}
     </span>
   ) : product.availableQty > 3 ? (
@@ -409,7 +409,7 @@ function ProductCard({
         {product.categoryName && (
           <span
             className={`absolute ${isPreOrder ? "top-6" : "top-2"} left-2 bg-white/80 backdrop-blur text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-              isPreOrder ? "text-amber-700 border-amber-200" : "text-emerald-700 border-emerald-200"
+              isPreOrder ? "text-amber-700 border-amber-200" : "text-green-700 border-green-200"
             }`}
           >
             {product.categoryName}
@@ -425,7 +425,7 @@ function ProductCard({
 
         <div className="mt-3 flex items-end justify-between gap-1">
           <div>
-            <p className={`text-xl font-extrabold tracking-tight ${isPreOrder ? "text-amber-600" : "text-emerald-700"}`}>
+            <p className={`text-xl font-extrabold tracking-tight ${isPreOrder ? "text-amber-600" : "text-green-700"}`}>
               ฿{product.salePrice.toLocaleString("th-TH", { minimumFractionDigits: 0 })}
             </p>
             {product.unitName && <p className="text-[11px] text-gray-400">/ {product.unitName}</p>}
@@ -436,7 +436,7 @@ function ProductCard({
         <button
           onClick={() => onAddToCart(product)}
           className={`mt-3 w-full rounded-full py-2 text-xs font-bold text-white shadow-sm transition-all hover:shadow-md ${
-            isPreOrder ? "bg-amber-500 hover:bg-amber-600" : "bg-emerald-700 hover:bg-emerald-800"
+            isPreOrder ? "bg-amber-500 hover:bg-amber-600" : "bg-green-700 hover:bg-green-800"
           }`}
         >
           + ใส่ตะกร้า

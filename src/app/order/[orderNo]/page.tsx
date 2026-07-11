@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import QRCode from "qrcode";
 import { prisma } from "@/lib/prisma";
+import { getAddFriendUrl } from "@/lib/lineOa";
 import RateRiderForm from "./RateRiderForm";
+import LineAddFriend from "./LineAddFriend";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING_PAYMENT: "รอชำระเงิน",
@@ -41,17 +44,24 @@ export default async function OrderConfirmationPage({
 
   if (!order) notFound();
 
+  // ลิงก์เพิ่มเพื่อน LINE OA + QR (สร้างฝั่ง server) สำหรับการ์ด "เพิ่มเพื่อนแบบกดปุ่มเดียว"
+  const settings = await prisma.appSettings.findUnique({ where: { id: "singleton" } });
+  const addFriendUrl = getAddFriendUrl(settings?.lineOaUrl);
+  const addFriendQr = await QRCode.toDataURL(addFriendUrl, { width: 320, margin: 1 }).catch(() => null);
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-emerald-700 text-white shadow-lg">
+      <header className="bg-green-700 text-white shadow-lg">
         <div className="max-w-2xl mx-auto px-4 py-6 text-center">
           <div className="text-4xl mb-2">✅</div>
           <h1 className="text-xl font-extrabold">สั่งซื้อสำเร็จ</h1>
-          <p className="text-emerald-200 text-sm mt-1">เลขที่ออเดอร์ {order.orderNo}</p>
+          <p className="text-green-200 text-sm mt-1">เลขที่ออเดอร์ {order.orderNo}</p>
         </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+        <LineAddFriend addUrl={addFriendUrl} qrDataUrl={addFriendQr} storageKey={order.orderNo} />
+
         {order.hasPreOrder && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-start gap-3">
             <span className="text-2xl mt-0.5">🕐</span>
@@ -92,7 +102,7 @@ export default async function OrderConfirmationPage({
                     {item.quantity} x ฿{Number(item.priceSnapshot).toLocaleString("th-TH")}
                   </p>
                 </div>
-                <p className="text-sm font-bold text-emerald-700 shrink-0">
+                <p className="text-sm font-bold text-green-700 shrink-0">
                   ฿{(item.quantity * Number(item.priceSnapshot)).toLocaleString("th-TH")}
                 </p>
               </div>
@@ -100,7 +110,7 @@ export default async function OrderConfirmationPage({
           </div>
           <div className="flex items-center justify-between pt-3 mt-2 border-t">
             <span className="text-gray-500 font-semibold">ยอดรวม</span>
-            <span className="text-2xl font-extrabold text-emerald-700">
+            <span className="text-2xl font-extrabold text-green-700">
               ฿{Number(order.totalAmount).toLocaleString("th-TH")}
             </span>
           </div>
@@ -154,7 +164,7 @@ export default async function OrderConfirmationPage({
               href={`https://www.google.com/maps?q=${order.customerLat},${order.customerLng}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-block mt-1 text-emerald-700 underline text-xs font-semibold"
+              className="inline-block mt-1 text-green-700 underline text-xs font-semibold"
             >
               📍 ดูตำแหน่งที่แชร์ไว้
             </a>
@@ -180,7 +190,7 @@ export default async function OrderConfirmationPage({
 
         <Link
           href="/"
-          className="block text-center bg-emerald-700 text-white font-bold py-3 rounded-full hover:bg-emerald-800 transition-colors"
+          className="block text-center bg-green-700 text-white font-bold py-3 rounded-full hover:bg-green-800 transition-colors"
         >
           กลับไปเลือกซื้อสินค้าต่อ
         </Link>

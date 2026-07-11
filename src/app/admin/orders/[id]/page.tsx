@@ -73,7 +73,7 @@ export default async function AdminOrderDetailPage({
                   {item.isPreOrder && (
                     <span
                       className={`ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        item.arrivedAt ? "text-emerald-600 bg-emerald-50" : "text-amber-600 bg-amber-50"
+                        item.arrivedAt ? "text-green-600 bg-green-50" : "text-amber-600 bg-amber-50"
                       }`}
                     >
                       {item.arrivedAt ? "✓ ของถึงแล้ว" : "🕐 Pre-order — รอของ"}
@@ -104,7 +104,7 @@ export default async function AdminOrderDetailPage({
         {order.paymentMethod === "COD" && (
           <p className="text-xs">
             {order.codRemitted ? (
-              <span className="font-semibold text-emerald-600">✓ คนขับนำเงินสดส่งร้านแล้ว</span>
+              <span className="font-semibold text-green-600">✓ คนขับนำเงินสดส่งร้านแล้ว</span>
             ) : (
               <span className="font-semibold text-amber-600">ยังไม่ได้นำเงินสดส่งร้าน</span>
             )}

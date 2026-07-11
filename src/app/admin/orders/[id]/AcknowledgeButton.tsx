@@ -41,7 +41,7 @@ export default function AcknowledgeButton({
         onClick={handleClick}
         disabled={loading || done}
         className={`rounded-full px-5 py-2 text-sm font-bold transition-colors disabled:opacity-70 ${
-          done ? "bg-emerald-100 text-emerald-700" : "bg-green-700 text-white hover:bg-green-800"
+          done ? "bg-green-100 text-green-700" : "bg-green-700 text-white hover:bg-green-800"
         }`}
       >
         {done ? "✓ รับออเดอร์แล้ว" : loading ? "กำลังส่ง..." : "📦 รับออเดอร์"}

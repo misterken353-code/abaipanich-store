@@ -39,7 +39,7 @@ export default function RateRiderForm({ orderNo, riderName }: { orderNo: string;
   if (done) {
     return (
       <div className="bg-white rounded-2xl border border-gray-100 p-5 text-center">
-        <p className="text-emerald-700 font-bold">✓ ขอบคุณสำหรับคะแนน!</p>
+        <p className="text-green-700 font-bold">✓ ขอบคุณสำหรับคะแนน!</p>
       </div>
     );
   }
@@ -67,14 +67,14 @@ export default function RateRiderForm({ orderNo, riderName }: { orderNo: string;
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         rows={2}
-        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
         placeholder="ความคิดเห็นเพิ่มเติม (ถ้ามี)"
       />
       {error && <p className="text-red-600 text-xs font-semibold mt-2">{error}</p>}
       <button
         onClick={handleSubmit}
         disabled={submitting}
-        className="mt-3 w-full bg-emerald-700 text-white font-bold py-2 rounded-full hover:bg-emerald-800 transition-colors disabled:opacity-50"
+        className="mt-3 w-full bg-green-700 text-white font-bold py-2 rounded-full hover:bg-green-800 transition-colors disabled:opacity-50"
       >
         {submitting ? "กำลังส่ง..." : "ส่งคะแนน"}
       </button>

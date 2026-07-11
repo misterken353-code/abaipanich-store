@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
-import { getLineConfig } from "@/lib/line";
+import { getLineConfig, replyLineMessage } from "@/lib/line";
+
+const WELCOME_MESSAGE =
+  "สวัสดีค่ะ 🙏 ยินดีต้อนรับสู่ร้าน สบายพาณิชย์\n" +
+  "ขอบคุณที่เพิ่มเพื่อนกันนะคะ 💚\n\n" +
+  "ช่องทางนี้ใช้สำหรับ:\n" +
+  "• แจ้งสถานะออเดอร์ของคุณ\n" +
+  "• ส่งสลิปยืนยันการโอนเงิน\n" +
+  "• สอบถามสินค้า/พูดคุยกับทางร้าน\n\n" +
+  "พิมพ์ทักได้เลยค่ะ ทางร้านจะรีบตอบกลับโดยเร็วที่สุด 😊";
 
 interface LineEvent {
   type: string;
+  replyToken?: string;
   source?: { userId?: string };
   message?: {
     type: string;
@@ -42,6 +52,13 @@ export async function POST(req: NextRequest) {
         await prisma.lineMessageLog.create({
           data: { lineUserId, direction: "IN", message: "[เริ่มติดตามบัญชี LINE OA]" },
         });
+        // ตอบต้อนรับทันทีเมื่อลูกค้าเพิ่มเพื่อน (ใช้ replyToken ฟรี ไม่กินโควตา push)
+        if (event.replyToken) {
+          await replyLineMessage(event.replyToken, WELCOME_MESSAGE);
+          await prisma.lineMessageLog.create({
+            data: { lineUserId, direction: "OUT", message: WELCOME_MESSAGE },
+          });
+        }
       } else if (event.type === "message" && event.message?.type === "text") {
         await prisma.lineMessageLog.create({
           data: { lineUserId, direction: "IN", message: event.message.text ?? "" },

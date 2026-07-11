@@ -157,10 +157,10 @@ export default function RiderDashboard({ token }: { token: string }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-emerald-700 text-white shadow-lg sticky top-0 z-10">
+      <header className="bg-green-700 text-white shadow-lg sticky top-0 z-10">
         <div className="max-w-lg mx-auto px-4 py-4">
           <h1 className="text-lg font-bold">🛵 สวัสดี {rider?.name ?? "..."}</h1>
-          <div className="flex items-center gap-3 mt-1 text-emerald-200 text-xs">
+          <div className="flex items-center gap-3 mt-1 text-green-200 text-xs">
             <span>
               {rider?.avgRating != null ? `⭐ ${rider.avgRating.toFixed(1)} (${rider.ratedCount})` : "ยังไม่มีคะแนน"}
             </span>
@@ -252,7 +252,7 @@ function OrderCard({
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
       <div className="flex items-center justify-between">
         <p className="font-bold text-gray-800">{order.orderNo}</p>
-        <p className="text-emerald-700 font-extrabold">฿{Number(order.totalAmount).toLocaleString("th-TH")}</p>
+        <p className="text-green-700 font-extrabold">฿{Number(order.totalAmount).toLocaleString("th-TH")}</p>
       </div>
       <p className="text-sm text-gray-600 mt-1">{order.customer.name} · {order.customer.phone}</p>
       <p className="text-xs text-gray-400 mt-1">
@@ -264,7 +264,7 @@ function OrderCard({
           href={`https://www.google.com/maps?q=${order.customerLat},${order.customerLng}`}
           target="_blank"
           rel="noreferrer"
-          className="inline-block mt-1 text-xs font-semibold text-emerald-700 underline"
+          className="inline-block mt-1 text-xs font-semibold text-green-700 underline"
         >
           เปิดแผนที่นำทาง
         </a>
@@ -275,7 +275,7 @@ function OrderCard({
         </p>
       )}
       {order.deliveryFee != null && Number(order.deliveryFee) > 0 && (
-        <p className="mt-2 ml-2 text-xs font-bold text-emerald-700 bg-emerald-50 inline-block rounded-full px-3 py-1">
+        <p className="mt-2 ml-2 text-xs font-bold text-green-700 bg-green-50 inline-block rounded-full px-3 py-1">
           💰 ค่าส่งเก็บจากลูกค้า ฿{Number(order.deliveryFee).toLocaleString("th-TH")} (ของคุณ)
         </p>
       )}
@@ -283,7 +283,7 @@ function OrderCard({
       <button
         onClick={action.onClick}
         disabled={action.busy}
-        className="mt-3 w-full rounded-full bg-emerald-700 py-2 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
+        className="mt-3 w-full rounded-full bg-green-700 py-2 text-sm font-bold text-white hover:bg-green-800 disabled:opacity-50"
       >
         {action.busy ? "กำลังบันทึก..." : action.label}
       </button>

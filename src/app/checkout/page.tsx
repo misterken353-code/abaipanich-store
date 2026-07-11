@@ -181,7 +181,7 @@ export default function CheckoutPage() {
           <p className="font-semibold text-gray-500">ตะกร้าว่างเปล่า</p>
           <Link
             href="/"
-            className="inline-block mt-4 bg-emerald-700 text-white text-sm font-bold px-5 py-2 rounded-full hover:bg-emerald-800"
+            className="inline-block mt-4 bg-green-700 text-white text-sm font-bold px-5 py-2 rounded-full hover:bg-green-800"
           >
             ไปเลือกสินค้า
           </Link>
@@ -192,9 +192,9 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-emerald-700 text-white shadow-lg">
+      <header className="bg-green-700 text-white shadow-lg">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <Link href="/cart" className="text-emerald-200 hover:text-white text-sm">
+          <Link href="/cart" className="text-green-200 hover:text-white text-sm">
             ← กลับไปตะกร้า
           </Link>
         </div>
@@ -224,14 +224,14 @@ export default function CheckoutPage() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               onBlur={handlePhoneBlur}
-              className={`${FIELD_CLASS} border-gray-200 bg-white focus:ring-2 focus:ring-emerald-400`}
+              className={`${FIELD_CLASS} border-gray-200 bg-white focus:ring-2 focus:ring-green-400`}
               placeholder="08x-xxx-xxxx"
             />
             {checkingPhone && <p className="text-xs text-gray-400 mt-1">กำลังตรวจสอบ...</p>}
           </div>
 
           {prefilled && (
-            <p className="text-xs text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2">
+            <p className="text-xs text-green-700 font-semibold bg-green-50 border border-green-200 rounded-xl px-4 py-2">
               ✓ พบข้อมูลลูกค้าเดิม — ดึงชื่อ/ที่อยู่จากคำสั่งซื้อก่อนหน้าให้แล้ว แก้ไขได้ตามต้องการ
             </p>
           )}
@@ -241,7 +241,7 @@ export default function CheckoutPage() {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className={`${FIELD_CLASS} border-gray-200 bg-white focus:ring-2 focus:ring-emerald-400`}
+              className={`${FIELD_CLASS} border-gray-200 bg-white focus:ring-2 focus:ring-green-400`}
               placeholder="ชื่อผู้รับสินค้า"
             />
           </div>
@@ -253,8 +253,8 @@ export default function CheckoutPage() {
                   key={opt.value}
                   className={`flex items-start gap-3 border rounded-xl px-4 py-3 cursor-pointer transition-colors ${
                     shippingMethod === opt.value
-                      ? "border-emerald-500 bg-emerald-50"
-                      : "border-gray-200 hover:border-emerald-300"
+                      ? "border-green-500 bg-green-50"
+                      : "border-gray-200 hover:border-green-300"
                   }`}
                 >
                   <input
@@ -262,7 +262,7 @@ export default function CheckoutPage() {
                     name="shippingMethod"
                     checked={shippingMethod === opt.value}
                     onChange={() => setShippingMethod(opt.value)}
-                    className="mt-1 accent-emerald-700"
+                    className="mt-1 accent-green-700"
                   />
                   <div>
                     <p className="text-sm font-semibold text-gray-800">{opt.label}</p>
@@ -286,7 +286,7 @@ export default function CheckoutPage() {
                   {locating ? "กำลังขอตำแหน่ง..." : location ? "📍 แชร์โลเคชั่นแล้ว ✓" : "📍 แชร์โลเคชั่น"}
                 </button>
                 {location && (
-                  <p className="text-xs text-emerald-700 mt-2">
+                  <p className="text-xs text-green-700 mt-2">
                     ได้รับตำแหน่งของคุณแล้ว ({location.lat.toFixed(5)}, {location.lng.toFixed(5)})
                   </p>
                 )}
@@ -308,7 +308,7 @@ export default function CheckoutPage() {
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 rows={3}
-                className={`${FIELD_CLASS} border-gray-200 bg-white focus:ring-2 focus:ring-emerald-400`}
+                className={`${FIELD_CLASS} border-gray-200 bg-white focus:ring-2 focus:ring-green-400`}
                 placeholder="ที่อยู่สำหรับจัดส่งสินค้า"
               />
             </div>
@@ -326,8 +326,8 @@ export default function CheckoutPage() {
                         ? "opacity-40 cursor-not-allowed border-gray-200"
                         : "cursor-pointer " +
                           (paymentMethod === opt.value
-                            ? "border-emerald-500 bg-emerald-50"
-                            : "border-gray-200 hover:border-emerald-300")
+                            ? "border-green-500 bg-green-50"
+                            : "border-gray-200 hover:border-green-300")
                     }`}
                   >
                     <input
@@ -336,7 +336,7 @@ export default function CheckoutPage() {
                       checked={paymentMethod === opt.value}
                       disabled={disabled}
                       onChange={() => setPaymentMethod(opt.value)}
-                      className="mt-1 accent-emerald-700"
+                      className="mt-1 accent-green-700"
                     />
                     <div>
                       <p className="text-sm font-semibold text-gray-800">{opt.label}</p>
@@ -356,14 +356,14 @@ export default function CheckoutPage() {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={2}
-              className={`${FIELD_CLASS} border-gray-200 bg-white focus:ring-2 focus:ring-emerald-400`}
+              className={`${FIELD_CLASS} border-gray-200 bg-white focus:ring-2 focus:ring-green-400`}
               placeholder="เช่น เวลาที่สะดวกให้จัดส่ง"
             />
           </div>
 
           <div className="flex items-center justify-between pt-2 border-t">
             <span className="text-gray-500 font-semibold">ยอดรวม</span>
-            <span className="text-xl font-extrabold text-emerald-700">
+            <span className="text-xl font-extrabold text-green-700">
               ฿{cartTotal(cart).toLocaleString("th-TH")}
             </span>
           </div>
@@ -373,7 +373,7 @@ export default function CheckoutPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-emerald-700 text-white font-bold py-3 rounded-full hover:bg-emerald-800 transition-colors disabled:opacity-50"
+            className="w-full bg-green-700 text-white font-bold py-3 rounded-full hover:bg-green-800 transition-colors disabled:opacity-50"
           >
             {submitting ? "กำลังสั่งซื้อ..." : "ยืนยันสั่งซื้อ"}
           </button>

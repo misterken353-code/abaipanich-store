@@ -45,7 +45,7 @@ export default function StockArrivedButton({
         onClick={handleClick}
         disabled={loading || done}
         className={`rounded-full px-5 py-2 text-sm font-bold transition-colors disabled:opacity-70 ${
-          done ? "bg-emerald-100 text-emerald-700" : "bg-amber-500 text-white hover:bg-amber-600"
+          done ? "bg-green-100 text-green-700" : "bg-amber-500 text-white hover:bg-amber-600"
         }`}
       >
         {done ? "✓ สินค้าถึงร้านแล้ว" : loading ? "กำลังบันทึก..." : "📦 สินค้ามาถึงร้านแล้ว"}

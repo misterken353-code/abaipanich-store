@@ -14,9 +14,15 @@ const c2 = col(2);
 
 const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
-  <rect width="${W}" height="${H}" fill="#047857"/>
-  <rect x="${c1.x0}" y="0" width="4" height="${H}" fill="#ffffff" opacity="0.35"/>
-  <rect x="${c2.x0}" y="0" width="4" height="${H}" fill="#ffffff" opacity="0.35"/>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4e9a2c"/>
+      <stop offset="100%" stop-color="#2f6b1c"/>
+    </linearGradient>
+  </defs>
+  <rect width="${W}" height="${H}" fill="url(#bg)"/>
+  <rect x="${c1.x0}" y="0" width="4" height="${H}" fill="#f5a623" opacity="0.55"/>
+  <rect x="${c2.x0}" y="0" width="4" height="${H}" fill="#f5a623" opacity="0.55"/>
 
   <!-- Column 1: shopping bag -->
   <g transform="translate(${c0.cx}, 300)">
@@ -44,7 +50,7 @@ const svg = `
   </g>
   <text x="${c2.cx}" y="520" font-size="70" font-weight="bold" fill="white" text-anchor="middle" font-family="Tahoma, Leelawadee UI, sans-serif">ติดต่อร้าน</text>
 
-  <text x="${W / 2}" y="700" font-size="40" fill="#a7f3d0" text-anchor="middle" font-family="Tahoma, Leelawadee UI, sans-serif">สบายพาณิชย์ — สั่งซื้อออนไลน์</text>
+  <text x="${W / 2}" y="700" font-size="40" fill="#ffe6b3" text-anchor="middle" font-family="Tahoma, Leelawadee UI, sans-serif">สบายพาณิชย์ — สั่งซื้อออนไลน์</text>
 </svg>`;
 
 sharp(Buffer.from(svg))

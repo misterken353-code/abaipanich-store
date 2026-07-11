@@ -259,7 +259,7 @@ export default function RidersManager({ riders }: { riders: Rider[] }) {
                   <button
                     onClick={() => toggleActive(r)}
                     className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      r.isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-200 text-gray-500"
+                      r.isActive ? "bg-green-100 text-green-700" : "bg-gray-200 text-gray-500"
                     }`}
                   >
                     {r.isActive ? "ใช้งานอยู่" : "ปิดใช้งาน"}
