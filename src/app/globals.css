@@ -17,3 +17,21 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
 
 .font-serif-th { font-family: 'Noto Serif Thai', serif; }
+
+/* ใบส่งของ: ปกติซ่อน แสดงเฉพาะตอนสั่งพิมพ์ (window.print) */
+#print-receipt { display: none; }
+@media print {
+  body { background: #fff; }
+  body * { visibility: hidden; }
+  #print-receipt,
+  #print-receipt * { visibility: visible; }
+  #print-receipt {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 24px;
+  }
+  @page { margin: 12mm; }
+}

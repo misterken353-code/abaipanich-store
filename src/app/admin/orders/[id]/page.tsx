@@ -1,10 +1,15 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { STORE, LINE_OA_CHAT_URL } from "@/lib/store";
 import StatusButtons from "./StatusButtons";
 import AcknowledgeButton from "./AcknowledgeButton";
 import AssignRiderButton from "./AssignRiderButton";
 import DoneButton from "./DoneButton";
 import StockArrivedButton from "./StockArrivedButton";
+import CustomerActions from "./CustomerActions";
+import PrintButton from "./PrintButton";
+
+const baht = (n: number) => n.toLocaleString("th-TH");
 
 const SHIPPING_LABEL: Record<string, string> = {
   PICKUP: "รับเองหน้าร้าน",
@@ -34,12 +39,27 @@ export default async function AdminOrderDetailPage({
 
   if (!order) notFound();
 
+  // สรุปยอด: ค่าสินค้า + ค่าส่งม้าเร็ว (ถ้ามี) = ยอดที่ลูกค้าต้องจ่ายทั้งหมด
+  const productTotal = Number(order.totalAmount);
+  const deliveryFee =
+    order.shippingMethod === "MOTORCYCLE" && order.deliveryFee != null ? Number(order.deliveryFee) : 0;
+  const grandTotal = productTotal + deliveryFee;
+  const collectNote =
+    order.paymentMethod === "COD"
+      ? "เก็บเงินปลายทางจากลูกค้า (ค่าสินค้า + ค่าส่ง)"
+      : deliveryFee > 0
+        ? "ค่าสินค้าโอนแล้ว — เหลือเก็บค่าส่งสดกับคนขับ"
+        : "ชำระครบแล้วผ่าน PromptPay";
+
   return (
     <div className="max-w-2xl">
-      <h1 className="mb-1 text-xl font-semibold">ออเดอร์ {order.orderNo}</h1>
-      <p className="mb-6 text-sm text-gray-400">
-        สั่งเมื่อ {order.createdAt.toLocaleString("th-TH")}
-      </p>
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="mb-1 text-xl font-semibold">ออเดอร์ {order.orderNo}</h1>
+          <p className="text-sm text-gray-400">สั่งเมื่อ {order.createdAt.toLocaleString("th-TH")}</p>
+        </div>
+        <PrintButton />
+      </div>
 
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5">
         <h2 className="mb-3 font-semibold text-gray-700">รับออเดอร์</h2>
@@ -90,11 +110,24 @@ export default async function AdminOrderDetailPage({
             </div>
           ))}
         </div>
-        <div className="mt-3 flex items-center justify-between border-t pt-3">
-          <span className="font-semibold text-gray-500">ยอดรวม</span>
-          <span className="text-xl font-bold text-green-700">
-            {Number(order.totalAmount).toLocaleString("th-TH")} บาท
-          </span>
+        <div className="mt-3 space-y-1 border-t pt-3 text-sm">
+          <div className="flex items-center justify-between text-gray-600">
+            <span>ค่าสินค้า</span>
+            <span>{baht(productTotal)} บาท</span>
+          </div>
+          {deliveryFee > 0 && (
+            <div className="flex items-center justify-between text-gray-600">
+              <span>ค่าส่งม้าเร็ว (คนขับเก็บสด)</span>
+              <span>{baht(deliveryFee)} บาท</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between border-t pt-2">
+            <span className="font-semibold text-gray-700">
+              {order.paymentMethod === "COD" ? "ยอดที่ต้องเก็บทั้งหมด" : "ยอดรวมทั้งหมด"}
+            </span>
+            <span className="text-xl font-bold text-green-700">{baht(grandTotal)} บาท</span>
+          </div>
+          <p className="pt-1 text-xs text-amber-700">💰 {collectNote}</p>
         </div>
       </div>
 
@@ -150,8 +183,19 @@ export default async function AdminOrderDetailPage({
         <h2 className="mb-2 font-semibold text-gray-700">ข้อมูลลูกค้า</h2>
         <p>ชื่อ: {order.customer.name}</p>
         <p>เบอร์โทร: {order.customer.phone}</p>
-        {order.customer.lineUserId && <p>LINE: {order.customer.lineUserId}</p>}
+        {order.customer.lineUserId && (
+          <p className="break-all text-xs text-gray-400">LINE User ID: {order.customer.lineUserId}</p>
+        )}
         {order.note && <p>หมายเหตุ: {order.note}</p>}
+
+        <div className="mt-3">
+          <CustomerActions
+            phone={order.customer.phone}
+            lineChatUrl={LINE_OA_CHAT_URL}
+            hasLineUser={Boolean(order.customer.lineUserId)}
+          />
+        </div>
+
         {order.slipUrl && (
           <p className="mt-2">
             สลิปโอนเงิน:{" "}
@@ -164,6 +208,89 @@ export default async function AdminOrderDetailPage({
 
       <div className="mt-6">
         <DoneButton />
+      </div>
+
+      {/* ใบส่งของสำหรับพิมพ์ — ซ่อนบนจอ แสดงเฉพาะตอน window.print() */}
+      <div id="print-receipt" className="text-black">
+        <div className="text-center">
+          <div className="text-2xl font-bold">{STORE.name}</div>
+          <div className="text-sm">{STORE.tagline}</div>
+          <div className="mt-1 text-xs">{STORE.address}</div>
+          <div className="text-xs">โทร. {STORE.phone}</div>
+        </div>
+
+        <div className="my-3 border-t border-black" />
+
+        <div className="text-center text-lg font-semibold">ใบส่งของ / ใบเสร็จรับเงิน</div>
+
+        <div className="mt-3 flex justify-between text-sm">
+          <div>
+            <div>เลขที่: {order.orderNo}</div>
+            <div>วันที่: {order.createdAt.toLocaleString("th-TH")}</div>
+          </div>
+          <div className="text-right">
+            <div>ลูกค้า: {order.customer.name}</div>
+            <div>โทร. {order.customer.phone}</div>
+          </div>
+        </div>
+        {order.shippingAddress && (
+          <div className="mt-1 text-sm">ที่อยู่จัดส่ง: {order.shippingAddress}</div>
+        )}
+
+        <table className="mt-3 w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-y border-black">
+              <th className="py-1 text-left font-semibold">รายการ</th>
+              <th className="py-1 text-center font-semibold">จำนวน</th>
+              <th className="py-1 text-right font-semibold">ราคา/หน่วย</th>
+              <th className="py-1 text-right font-semibold">รวม</th>
+            </tr>
+          </thead>
+          <tbody>
+            {order.items.map((item) => (
+              <tr key={item.id} className="border-b border-gray-400">
+                <td className="py-1">{item.nameSnapshot}</td>
+                <td className="py-1 text-center">{item.quantity}</td>
+                <td className="py-1 text-right">{baht(Number(item.priceSnapshot))}</td>
+                <td className="py-1 text-right">{baht(item.quantity * Number(item.priceSnapshot))}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="mt-3 ml-auto w-64 text-sm">
+          <div className="flex justify-between">
+            <span>ค่าสินค้า</span>
+            <span>{baht(productTotal)} บาท</span>
+          </div>
+          {deliveryFee > 0 && (
+            <div className="flex justify-between">
+              <span>ค่าส่งม้าเร็ว</span>
+              <span>{baht(deliveryFee)} บาท</span>
+            </div>
+          )}
+          <div className="mt-1 flex justify-between border-t border-black pt-1 text-base font-bold">
+            <span>ยอดรวมทั้งสิ้น</span>
+            <span>{baht(grandTotal)} บาท</span>
+          </div>
+        </div>
+
+        <div className="mt-2 text-sm">
+          การชำระเงิน: {order.paymentMethod === "COD" ? "เก็บเงินปลายทาง (COD)" : "โอนผ่าน PromptPay"}
+        </div>
+
+        <div className="mt-8 flex justify-between text-center text-sm">
+          <div>
+            <div className="mb-8">......................................</div>
+            <div>ผู้รับสินค้า</div>
+          </div>
+          <div>
+            <div className="mb-8">......................................</div>
+            <div>ผู้ส่งสินค้า</div>
+          </div>
+        </div>
+
+        <div className="mt-4 text-center text-xs">ขอบคุณที่อุดหนุน {STORE.name} 🙏</div>
       </div>
     </div>
   );
